@@ -5,6 +5,8 @@
  *=================================================================*/
 #include <math.h>
 #include <mex.h>
+#include "kataPlanner.h"
+
 
 /* Input Arguments */
 #define	MAP_IN                  prhs[0]
@@ -47,10 +49,10 @@ struct {
 } plan_node;
 
 
-void populate_3d_map(plan_node* node_map, map, x_size, y_size)
-{
-    node_map = plan_node[x_size][y_size][x_size];
-}
+// void populate_3d_map(plan_node* node_map, map, x_size, y_size)
+// {
+//     node_map = plan_node[x_size][y_size][t_size];
+// }
 
 static void planner(
         double*	map,
