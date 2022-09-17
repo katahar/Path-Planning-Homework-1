@@ -131,7 +131,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
         mexErrMsgIdAndTxt( "MATLAB:planner:maxlhs",
                 "One output argument required.");
     }
-    
+
     /* get the dimensions of the map and the map matrix itself*/
     int x_size = mxGetM(MAP_IN);
     int y_size = mxGetN(MAP_IN);

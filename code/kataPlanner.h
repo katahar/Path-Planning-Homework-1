@@ -1,6 +1,7 @@
 #include <list>
 #include <stdio.h>
 
+
 class planNode
 {
     public:
@@ -37,10 +38,15 @@ class planMap
     public: 
         planNode* map; 
 
-        // planMap(int x_size, int y_size, int t_size)
-        // {
-        //     map = new planNode[x_size][y_size][t_size]
-        // }
+        planMap(const int x_size, const int y_size, const int t_size)
+        {
+            map = new planNode[x_size][y_size][t_size];
+        }
+
+        ~planMap()
+        {
+            delete[] map;
+        }
 };
 
 
