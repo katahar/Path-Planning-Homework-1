@@ -59,11 +59,6 @@ struct {
 } plan_node;
 
 
-// void populate_3d_map(plan_node* node_map, map, x_size, y_size)
-// {
-//     node_map = plan_node[x_size][y_size][t_size];
-// }
-
 static void planner(
         double*	map,
         int collision_thresh,
@@ -79,6 +74,19 @@ static void planner(
         double* action_ptr
         )
 {
+
+    //===================================================
+    for(int i = 0; i < x_size; i++)
+    {
+        for(int j = 0; j < y_size; j++)
+        {
+            std::cout << map[GETMAPINDEX(i,j,x_size,y_size)]; 
+        }
+     
+    }
+
+    //===================================================
+
     // 8-connected grid
     int dX[NUMOFDIRS] = {-1, -1, -1,  0,  0,  1, 1, 1};
     int dY[NUMOFDIRS] = {-1,  0,  1, -1,  1, -1, 0, 1};

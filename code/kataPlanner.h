@@ -16,7 +16,7 @@
 
 class planNode
 {
-    public:
+    private:
         int x = 0;
         int y = 0;
         int t = 0;
@@ -31,6 +31,7 @@ class planNode
         bool is_obstacle = false; 
         double collision_thresh = 0.0;
 
+    public:
         planNode()
         {
 
@@ -132,19 +133,41 @@ class planNode
             return this->t;
         }
         
+        planNode* get_ptr()
+        {
+            return this*;
+        }
+        
 
 };
 
 //==========================================================================================
 class planMap
 {
-    public: 
-        
-    
-    private:
-        std::vector<std::vector<std::vector<planNode>>> map_vec;
+     private:
+        std::vector<std::vector<std::vector<planNode*>>> map_vec;
+        double*	map;
+        double* target_traj;
+        int robotposeX;
+        int robotposeY;
+        int target_steps;
+        int collision_thresh;
+        int x_size;
+        int y_size;
 
+        
+    public: 
         planMap(); 
+        
+        void resize_map(int x_dim, int y_dim, int t_dim)
+        {
+            map_vec.resize(x_dim,std::vector<std::vector<customClass> >(y_dim,std::vector<customClass*>(t_dim)));
+        }
+
+
+    
+   
+
  
 
 };

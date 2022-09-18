@@ -2,6 +2,7 @@
 #include <queue>
 #include <vector>
 
+
 class customClass
 {
     public:
@@ -19,6 +20,12 @@ class customClass
         customClass()
         {
 
+        }
+
+        customClass* get_ptr()
+        {
+            std::cout << "Getting ptr" << std::endl;
+            return this;
         }
 
         void print()
@@ -87,10 +94,16 @@ main()
 
 
     // std::vector<std::vector<std::vector<customClass>>> map_vec(3, std::vector<std::vector<customClass>>(4, std::vector<customClass>(5)));
-    std::vector<std::vector<std::vector<customClass>>> map_vec;
-    map_vec.resize(3,std::vector<std::vector<customClass> >(5,std::vector<customClass>(10)));
+    std::vector<std::vector<std::vector<customClass*>>> map_vec_ptrs;
+    map_vec_ptrs.resize(3,std::vector<std::vector<customClass*> >(5,std::vector<customClass*>(10)));
 
-    map_vec[0][1][1] = instA; 
-    // std::cout << "AA";
-    map_vec[0][1][1].print();
+    map_vec_ptrs[0][1][1] = instA.get_ptr(); 
+    map_vec_ptrs[0][1][1]->print();
+
+    std::cout << "Changing evaluation metric to -2 via original object" << std::endl;
+    instA.evaluation_metric = -2;
+    std::cout << "Accessing object via queue" << std::endl;
+    map_vec_ptrs[0][1][1]->print();
+
+
 }   
