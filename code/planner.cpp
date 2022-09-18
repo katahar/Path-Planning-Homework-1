@@ -3,9 +3,19 @@
  * planner.c
  *
  *=================================================================*/
-#include <math.h>
-#include <mex.h>
-#include "kataPlanner.h"
+#ifndef _MATH
+    #define _MATH
+    #include <math.h>
+#endif
+#ifndef _MEX
+    #define _MEX
+    #include <mex.h>
+#endif
+#ifndef _KATAPLAN
+    #define _KATAPLAN
+    #include "kataPlanner.h"
+#endif
+
 
 
 /* Input Arguments */

@@ -18,7 +18,7 @@ class customClass
         
         customClass()
         {
-            
+
         }
 
         void print()
@@ -86,10 +86,11 @@ main()
     showpq(pq);
 
 
-    std::vector<std::vector<std::vector<customClass>>> map_vec(3, std::vector<std::vector<customClass>>(4, std::vector<customClass>(5)));
+    // std::vector<std::vector<std::vector<customClass>>> map_vec(3, std::vector<std::vector<customClass>>(4, std::vector<customClass>(5)));
+    std::vector<std::vector<std::vector<customClass>>> map_vec;
+    map_vec.resize(3,std::vector<std::vector<customClass> >(5,std::vector<customClass>(10)));
+
     map_vec[0][1][1] = instA; 
-    std::cout << "AA";
+    // std::cout << "AA";
     map_vec[0][1][1].print();
-
-
 }   
