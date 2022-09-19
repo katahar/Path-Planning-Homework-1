@@ -11,11 +11,11 @@
     #define _MEX
     #include <mex.h>
 #endif
-#ifndef _KATAPLAN
-    #define _KATAPLAN
-    #include "kataPlanner.h"
-#endif
-
+// #ifndef _KATAPLAN
+//     #define _KATAPLAN
+//     #include "kataPlanner.h"
+// #endif
+#include <iostream>
 
 
 /* Input Arguments */
@@ -33,6 +33,8 @@
 //access to the map is shifted to account for 0-based indexing in the map, whereas
 //1-based indexing in matlab (so, robotpose and goalpose are 1-indexed)
 #define GETMAPINDEX(X, Y, XSIZE, YSIZE) ((Y-1)*XSIZE + (X-1))
+#define GETMAPINDEXZEROED(X, Y, XSIZE, YSIZE) ((Y)*XSIZE + (X))
+
 
 #if !defined(MAX)
 #define	MAX(A, B)	((A) > (B) ? (A) : (B))
@@ -74,14 +76,31 @@ static void planner(
         double* action_ptr
         )
 {
+    //NOTE: Robot and target positions must be corrected due to difference in indexing
+    int robotposeXcorrected = robotposeX - 1;
+    int robotposeYcorrected = robotposeY - 1;
+    int targetposeXcorrected = targetposeX - 1;
+    int targetposeYcorrected = targetposeY - 1;
 
     //===================================================
+    
+    // int int_val = 9;
+    // double dub_val = 9.1;
+    // mexPrintf("%i \n", int_val);
+    // mexPrintf("%g \n", dub_val);
+
+
+    // mexPrintf("%g \n", map[GETMAPINDEXZEROED(i,j,x_size,y_size)]);
+    mexPrintf("x_size: %i, y_size: %i", x_size, y_size); 
+
     for(int i = 0; i < x_size; i++)
     {
         for(int j = 0; j < y_size; j++)
         {
-            std::cout << map[GETMAPINDEX(i,j,x_size,y_size)]; 
+            mexPrintf("%g ", map[GETMAPINDEXZEROED(i,j,x_size,y_size)]);
         }
+
+        mexPrintf("\n");
      
     }
 

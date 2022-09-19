@@ -24,12 +24,11 @@ class planNode
         double g = std::numeric_limits<int>::max();
         double h = 0.0;
         double c = 0.0;
-        int prev_x; 
-        int prev_y;
         int prev_t;
         bool is_goal = false; 
         bool is_obstacle = false; 
         double collision_thresh = 0.0;
+        planNode* prevPos; 
 
     public:
         planNode()
@@ -46,6 +45,12 @@ class planNode
             set_collision_thresh(collision_thresh);
             set_c(c, collision_thresh);
         }
+        ~planNode()
+        {
+            delete prevPos;
+            prevPos = nullptr;
+        }
+
 
         void update_f()
         {
@@ -56,17 +61,21 @@ class planNode
             this->g = g_in;
             this->update_f();
         }
+        void set_g_cumulative(double cumulative_cost) //assumes that cost for this node has already been assigned, will automatically add to given g
+        {
+            this->g = cumulative_cost + this->c;
+            this->update_f();
+        }        
         void set_h(double h_in)
         {
             this->h = h_in;
             this->update_f();
         }
-        void set_prev(int x_in, int y_in, int t_in)
+        void set_prev(planNode* prev)
         {
-            this -> prev_t = t_in;
-            this -> prev_x = x_in;
-            this -> prev_y = y_in;
+            this -> prevPos = prev;
         }
+        
         void set_x(int x)
         {
             this -> x = x;
@@ -89,13 +98,14 @@ class planNode
         {
             this -> c = c;
         }
-        void set_c(double c, double collision_thresh)
+        bool set_c(double c, double collision_thresh)
         {
             set_c(c);
             if(c >= collision_thresh)
             {
                 is_obstacle = true;
             }
+            return is_obstacle;
         }
         void set_collision_thresh(double thresh)
         {
@@ -105,7 +115,11 @@ class planNode
         {
             this -> is_goal = is_goal;
         }
-        
+        void set_prev(planNode* previous_node)
+        {
+            prevPos = previous_node;
+        }
+
         double get_g()
         {
             return this->g;
@@ -118,8 +132,10 @@ class planNode
         {
             return this->h;
         }
-        
-
+        double get_c()
+        {
+            return this->c;
+        }
         int get_x()
         {
             return this->x;
@@ -135,7 +151,7 @@ class planNode
         
         planNode* get_ptr()
         {
-            return this*;
+            return this;
         }
         
 
@@ -145,23 +161,104 @@ class planNode
 class planMap
 {
      private:
-        std::vector<std::vector<std::vector<planNode*>>> map_vec;
+        std::vector<std::vector<std::vector<planNode*>>> map_vec_3d;
         double*	map;
         double* target_traj;
+        int target_steps;
         int robotposeX;
         int robotposeY;
-        int target_steps;
         int collision_thresh;
         int x_size;
         int y_size;
 
         
     public: 
-        planMap(); 
+        planMap();
+        planMap(double* map_in, int x_size, int y_size, double* target_traj_in, int target_steps, int col_thresh, int robotposeX, int robotposeY)
+        {
+            resize_map(x_size,y_size,target_steps);
+            this->target_steps = target_traj_in;
+            this->map =  map_in;
+            this->collision_thresh = col_thresh;
+            this->robotposeX = robotposeX;
+            this->robotposeY = robotposeY;
+
+        } 
+
+        ~planMap()
+        {
+            if(map != nullptr)
+            {
+                delete [] map;
+                map = nullptr;
+            }
+            if(target_traj != nullptr)
+            {
+                delete [] target_traj;
+                target_traj = nullptr;
+            }
+        }
         
+        
+        int get_map_ind(int x_ind, int y_ind)
+        {
+            if(x_ind >=0 && y_ind >= 0)
+            {
+                int temp_return = y_ind*x_size + x_ind;
+                if(!(temp_return > x_size*y_size))
+                {
+                    return temp_return;
+                }
+                
+            }
+             return 0;
+        }
+
         void resize_map(int x_dim, int y_dim, int t_dim)
         {
-            map_vec.resize(x_dim,std::vector<std::vector<customClass> >(y_dim,std::vector<customClass*>(t_dim)));
+            this->target_steps = t_dim;
+            this->x_size = x_dim;
+            this->y_size = y_dim;
+            map_vec_3d.resize(x_dim,std::vector<std::vector<planNode*> >(y_dim,std::vector<planNode*>(t_dim)));
+        }
+
+
+        void update_cost(planNode* node, double cumulative_cost)
+        {
+            if(node->get_g != std::numeric_limits<int>::max()) //meaning that it has not been evaluated yet
+            {
+                if(node-> set_c(map[get_map_ind(node->get_x,node->get_y)],collision_thresh)); //true if obstacle
+                {
+                    // do nothing, because do not want to evaluate obstacles
+                }
+                else
+                {
+
+                    node->set_g_cumulative(cumulative_cost); //node adds cost to the provided cumulative cost. 
+                    // node->set_h() //@TODO: add in heuristics.  
+                }
+            }
+            else //the node has already been assessed
+            {
+                // check if obstacle first!! TODO
+                if(node->get_g() > (cumulative_cost + node->get_c()))
+                {
+                    node->set_g(cumulative_cost + node->get_c());
+                    // TODO: add update flag so original node is added to this for backtracing purposes
+                }
+            }
+            
+        }
+
+        void evaluate_neighbor(planNode* current, planNode* neighbor)
+        {
+            neighbor->set_coord(current->get_x(),current->get_y(),current->get_t()+1);
+            update_cost(neighbor,current->get_g());
+        }
+
+        void evaluate_all_neighbors(planNode* current)
+        {
+
         }
 
 
