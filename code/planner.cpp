@@ -11,10 +11,10 @@
     #define _MEX
     #include <mex.h>
 #endif
-// #ifndef _KATAPLAN
-//     #define _KATAPLAN
-//     #include "kataPlanner.h"
-// #endif
+#ifndef _KATAPLAN
+    #define _KATAPLAN
+    #include "kataPlanner.h"
+#endif
 #include <iostream>
 
 
@@ -46,20 +46,9 @@
 
 #define NUMOFDIRS 8
 
-struct {
-    int x = 0;
-    int y = 0;
-    int t = 0;
-    double f = 0.0;
-    double g = 0.0;
-    double h = 0.0;
-    double c = 0.0;
-    int prev_x; 
-    int prev_y;
-    bool is_goal = false; 
-    bool is_obstacle = false; 
-} plan_node;
-
+bool first_run_complete = false; 
+kataPlanner3D 3D_planner;
+int time_count = 0; 
 
 static void planner(
         double*	map,
@@ -82,6 +71,17 @@ static void planner(
     int targetposeXcorrected = targetposeX - 1;
     int targetposeYcorrected = targetposeY - 1;
 
+    if(!first_run_complete)
+    {
+        3D_planner = kataPlanner3D(map, x_size, y_size, target_traj, target_steps, collision_thresh, robotposeXcorrected, robotposeYcorrected);
+        3D_planner.generate_plan();
+    }
+    else
+    {
+        action_ptr[0] = 3D_planner.get_x_dir(time_count);
+        action_ptr[1] = 3D_planner.get_y_dir(time_count);
+    }
+
     //===================================================
     
     // int int_val = 9;
@@ -91,59 +91,50 @@ static void planner(
 
 
     // mexPrintf("%g \n", map[GETMAPINDEXZEROED(i,j,x_size,y_size)]);
-    mexPrintf("x_size: %i, y_size: %i", x_size, y_size); 
+    // mexPrintf("x_size: %i, y_size: %i\n", x_size, y_size); 
 
-    for(int i = 0; i < x_size; i++)
-    {
-        for(int j = 0; j < y_size; j++)
-        {
-            mexPrintf("%g ", map[GETMAPINDEXZEROED(i,j,x_size,y_size)]);
-        }
 
-        mexPrintf("\n");
-     
-    }
 
     //===================================================
 
-    // 8-connected grid
-    int dX[NUMOFDIRS] = {-1, -1, -1,  0,  0,  1, 1, 1};
-    int dY[NUMOFDIRS] = {-1,  0,  1, -1,  1, -1, 0, 1};
+    // // 8-connected grid
+    // int dX[NUMOFDIRS] = {-1, -1, -1,  0,  0,  1, 1, 1};
+    // int dY[NUMOFDIRS] = {-1,  0,  1, -1,  1, -1, 0, 1};
     
-    // for now greedily move towards the final target position,
-    // but this is where you can put your planner
+    // // for now greedily move towards the final target position,
+    // // but this is where you can put your planner
 
-    int goalposeX = (int) target_traj[target_steps-1];
-    int goalposeY = (int) target_traj[target_steps-1+target_steps];
-    // printf("robot: %d %d;\n", robotposeX, robotposeY);
-    // printf("goal: %d %d;\n", goalposeX, goalposeY);
+    // int goalposeX = (int) target_traj[target_steps-1];
+    // int goalposeY = (int) target_traj[target_steps-1+target_steps];
+    // // printf("robot: %d %d;\n", robotposeX, robotposeY);
+    // // printf("goal: %d %d;\n", goalposeX, goalposeY);
 
-    int bestX = 0, bestY = 0; // robot will not move if greedy action leads to collision
-    double olddisttotarget = (double)sqrt(((robotposeX-goalposeX)*(robotposeX-goalposeX) + (robotposeY-goalposeY)*(robotposeY-goalposeY)));
-    double disttotarget;
-    for(int dir = 0; dir < NUMOFDIRS; dir++)
-    {
-        int newx = robotposeX + dX[dir];
-        int newy = robotposeY + dY[dir];
+    // int bestX = 0, bestY = 0; // robot will not move if greedy action leads to collision
+    // double olddisttotarget = (double)sqrt(((robotposeX-goalposeX)*(robotposeX-goalposeX) + (robotposeY-goalposeY)*(robotposeY-goalposeY)));
+    // double disttotarget;
+    // for(int dir = 0; dir < NUMOFDIRS; dir++)
+    // {
+    //     int newx = robotposeX + dX[dir];
+    //     int newy = robotposeY + dY[dir];
 
-        if (newx >= 1 && newx <= x_size && newy >= 1 && newy <= y_size)
-        {
-            if (((int)map[GETMAPINDEX(newx,newy,x_size,y_size)] >= 0) && ((int)map[GETMAPINDEX(newx,newy,x_size,y_size)] < collision_thresh))  //if free
-            {
-                disttotarget = (double)sqrt(((newx-goalposeX)*(newx-goalposeX) + (newy-goalposeY)*(newy-goalposeY)));
-                if(disttotarget < olddisttotarget)
-                {
-                    olddisttotarget = disttotarget;
-                    bestX = dX[dir];
-                    bestY = dY[dir];
-                }
-            }
-        }
-    }
-    robotposeX = robotposeX + bestX;
-    robotposeY = robotposeY + bestY;
-    action_ptr[0] = robotposeX;
-    action_ptr[1] = robotposeY;
+    //     if (newx >= 1 && newx <= x_size && newy >= 1 && newy <= y_size)
+    //     {
+    //         if (((int)map[GETMAPINDEX(newx,newy,x_size,y_size)] >= 0) && ((int)map[GETMAPINDEX(newx,newy,x_size,y_size)] < collision_thresh))  //if free
+    //         {
+    //             disttotarget = (double)sqrt(((newx-goalposeX)*(newx-goalposeX) + (newy-goalposeY)*(newy-goalposeY)));
+    //             if(disttotarget < olddisttotarget)
+    //             {
+    //                 olddisttotarget = disttotarget;
+    //                 bestX = dX[dir];
+    //                 bestY = dY[dir];
+    //             }
+    //         }
+    //     }
+    // }
+    // robotposeX = robotposeX + bestX;
+    // robotposeY = robotposeY + bestY;
+    // action_ptr[0] = robotposeX;
+    // action_ptr[1] = robotposeY;
     
     return;
 }

@@ -6,162 +6,29 @@
     #define _MATH
     #include <math.h>
 #endif
+#ifndef _KATANODE
+    #define _KATANODE
+    #include "planNode.h"
+#endif
 
 #include <list>
 #include <stdio.h>
 #include <vector>
 #include <limits>
+#include <queue>
+#include <bits/stdc++.h>
+#include <algorithm>    // std::max
+#include <map>
+#include <utility>      // std::pair, std::make_pair
+#include <iostream>
+#include <chrono>
 
-
-
-class planNode
-{
-    private:
-        int x = 0;
-        int y = 0;
-        int t = 0;
-        double f = 0.0;
-        double g = std::numeric_limits<int>::max();
-        double h = 0.0;
-        double c = 0.0;
-        int prev_t;
-        bool is_goal = false; 
-        bool is_obstacle = false; 
-        double collision_thresh = 0.0;
-        planNode* prevPos; 
-
-    public:
-        planNode()
-        {
-
-        }
-
-        planNode(int x, int y, int t, double c, double collision_thresh)
-        {
-            set_x(x);
-            set_y(y);
-            set_t(t);
-            set_c(c);
-            set_collision_thresh(collision_thresh);
-            set_c(c, collision_thresh);
-        }
-        ~planNode()
-        {
-            delete prevPos;
-            prevPos = nullptr;
-        }
-
-
-        void update_f()
-        {
-            this->f = this->g + this->h;
-        }
-        void set_g(double g_in)
-        {
-            this->g = g_in;
-            this->update_f();
-        }
-        void set_g_cumulative(double cumulative_cost) //assumes that cost for this node has already been assigned, will automatically add to given g
-        {
-            this->g = cumulative_cost + this->c;
-            this->update_f();
-        }        
-        void set_h(double h_in)
-        {
-            this->h = h_in;
-            this->update_f();
-        }
-        void set_prev(planNode* prev)
-        {
-            this -> prevPos = prev;
-        }
-        
-        void set_x(int x)
-        {
-            this -> x = x;
-        }
-        void set_y(int y)
-        {
-            this -> y = y;
-        }
-        void set_t(int t)
-        {
-            this -> t = t;
-        }
-        void set_coord(int x, int y, int t)
-        {
-            set_x(x);
-            set_y(y);
-            set_t(t);
-        }
-        void set_c(double c)
-        {
-            this -> c = c;
-        }
-        bool set_c(double c, double collision_thresh)
-        {
-            set_c(c);
-            if(c >= collision_thresh)
-            {
-                is_obstacle = true;
-            }
-            return is_obstacle;
-        }
-        void set_collision_thresh(double thresh)
-        {
-            this->collision_thresh = collision_thresh;
-        }
-        void set_is_goal(bool is_goal)
-        {
-            this -> is_goal = is_goal;
-        }
-        void set_prev(planNode* previous_node)
-        {
-            prevPos = previous_node;
-        }
-
-        double get_g()
-        {
-            return this->g;
-        }
-        double get_f()
-        {
-            return this->f;
-        }
-        double get_h()
-        {
-            return this->h;
-        }
-        double get_c()
-        {
-            return this->c;
-        }
-        int get_x()
-        {
-            return this->x;
-        }
-        int get_y()
-        {
-            return this->y;
-        }
-        int get_t()
-        {
-            return this->t;
-        }
-        
-        planNode* get_ptr()
-        {
-            return this;
-        }
-        
-
-};
 
 //==========================================================================================
-class planMap
+class kataPlanner
 {
-     private:
-        std::vector<std::vector<std::vector<planNode*>>> map_vec_3d;
+     protected:
+        #define NUMDIRS 9
         double*	map;
         double* target_traj;
         int target_steps;
@@ -170,22 +37,62 @@ class planMap
         int collision_thresh;
         int x_size;
         int y_size;
+        // int num_dimensions = 2; 
+        std::priority_queue<planNode*, std::vector<planNode*>, std::greater<std::vector<planNode*>::value_type> > open_list;
+        // std::map<int,planNode*> open_list_checker;
+        std::unordered_set <planNode*> closed_list; 
+        // int hash_base; 
+        std::chrono::time_point<std::chrono::system_clock> startTime;
+        int elapsed_time; 
+        bool expanded_goal = false; 
+        int last_goal_t_step = -1;
+        std::vector<int> path; 
+        planNode* last_found_goal;
+        
+        // 8-connected grid
+        int dX[NUMDIRS] = {-1, -1, -1,  0,  0,  1, 1, 1, 0};
+        int dY[NUMDIRS] = {-1,  0,  1, -1,  1, -1, 0, 1, 0};
 
         
     public: 
-        planMap();
-        planMap(double* map_in, int x_size, int y_size, double* target_traj_in, int target_steps, int col_thresh, int robotposeX, int robotposeY)
+        kataPlanner();
+        kataPlanner(double* map_in, int x_size, int y_size, double* target_traj_in, int target_steps, int col_thresh, int robotposeX, int robotposeY)
         {
-            resize_map(x_size,y_size,target_steps);
-            this->target_steps = target_traj_in;
-            this->map =  map_in;
-            this->collision_thresh = col_thresh;
-            this->robotposeX = robotposeX;
-            this->robotposeY = robotposeY;
-
+            this -> target_steps = target_steps;
+            this -> target_traj = target_traj_in;
+            this -> map =  map_in;
+            this -> collision_thresh = col_thresh;
+            this -> robotposeX = robotposeX;
+            this -> robotposeY = robotposeY;
+            this -> x_size = x_size;
+            this -> y_size = y_size; 
+            // this -> find_hash_base()
         } 
 
-        ~planMap()
+        // int find_hash_base()
+        // {       
+        //     int temp = std::max(x_size,y_size);
+        //     int hash_base = 1; 
+        //      while(temp != 0) 
+        //     {
+        //         temp = temp / 10;
+        //         hash_base*=10;
+        //     }
+        //     hash_base*=10;
+        // }
+
+        // int get_hash_key(planNode* input)
+        // {
+        //     std::vector<int> coordinates = input -> get_coords();
+        //     int key; 
+        //     for(int i = 0; i < coordinates.size(); i++)
+        //     {
+        //         key = key + (coordinates[i] * pow(hash_base,i));
+        //     }
+        //     return key;
+        // }
+
+        ~kataPlanner()
         {
             if(map != nullptr)
             {
@@ -197,8 +104,12 @@ class planMap
                 delete [] target_traj;
                 target_traj = nullptr;
             }
+            if(last_found_goal != nullptr)
+            {
+                delete last_found_goal;
+                last_found_goal = nullptr;
+            }
         }
-        
         
         int get_map_ind(int x_ind, int y_ind)
         {
@@ -214,67 +125,195 @@ class planMap
              return 0;
         }
 
-        void resize_map(int x_dim, int y_dim, int t_dim)
+        bool in_closed(planNode* input)
         {
-            this->target_steps = t_dim;
-            this->x_size = x_dim;
-            this->y_size = y_dim;
-            map_vec_3d.resize(x_dim,std::vector<std::vector<planNode*> >(y_dim,std::vector<planNode*>(t_dim)));
-        }
-
-
-        void update_cost(planNode* node, double cumulative_cost)
-        {
-            if(node->get_g != std::numeric_limits<int>::max()) //meaning that it has not been evaluated yet
+            if(closed_list.find(input) != closed_list.end())
             {
-                if(node-> set_c(map[get_map_ind(node->get_x,node->get_y)],collision_thresh)); //true if obstacle
-                {
-                    // do nothing, because do not want to evaluate obstacles
-                }
-                else
-                {
-
-                    node->set_g_cumulative(cumulative_cost); //node adds cost to the provided cumulative cost. 
-                    // node->set_h() //@TODO: add in heuristics.  
-                }
+                return true;
             }
-            else //the node has already been assessed
+            return false; 
+        }
+
+        // bool is_in_open(planNode* input)
+        // {
+        //     if(open_list_checker.find(get_hash_key(input)) != open_list_checker.end())
+        //     {
+        //         return true;
+        //     }
+        //     return false;
+        // }
+
+        void add_to_open(planNode* input)
+        {
+            this -> open_list.push_back(input);   
+            // this -> open_list_checker.insert(std::pair<int,int>(this->get_hash_key(input),input));
+        }
+
+        planNode* get_from_open()
+        {
+            planNode* ret_val = open_list.top();
+            open_list.pop();
+            // open_list_checker.erase(get_hash_key(ret_val));
+            return ret_val;  
+        }
+
+        // planNode* get_from_open(planNode* input)
+        // {           
+        //     open_list_checker.erase(get_hash_key(input));
+        //     return ret_val;  
+        // }
+
+
+        bool open_is_empty()
+        {
+            return open_list.empty();
+        }
+
+        void add_to_closed(planNode* input)
+        {
+            closed_list.insert(input);
+        }
+
+        std::vector<int> get_coords_from_rel(std::vector<int> base, std::vector<int> rel_direction)
+        {
+            std::vector<int> ret_val; 
+            for(int i = 0; i < base.size(); ++i)
             {
-                // check if obstacle first!! TODO
-                if(node->get_g() > (cumulative_cost + node->get_c()))
-                {
-                    node->set_g(cumulative_cost + node->get_c());
-                    // TODO: add update flag so original node is added to this for backtracing purposes
-                }
+                ret_val.push_back(base[i] + rel_direction[i]);
             }
-            
+            return ret_val;
         }
-
-        void evaluate_neighbor(planNode* current, planNode* neighbor)
+        
+        void mark_expanded(planNode* goal_input)
         {
-            neighbor->set_coord(current->get_x(),current->get_y(),current->get_t()+1);
-            update_cost(neighbor,current->get_g());
+            last_goal_t_step = goal_input->get_dim(2);
+            last_found_goal = goal_input;
+            expanded_goal = true;
         }
 
-        void evaluate_all_neighbors(planNode* current)
+
+
+
+        void update_cost(planNode* neighbor, double cumulative_cost)
         {
+            if(!(neighbor-> set_c(map[get_map_ind(neighbor->get_x(),node->get_y())], collision_thresh))); //true if obstacle
+            {
+                neighbor->set_g_cumulative(cumulative_cost); //node adds cost to the provided cumulative cost. 
+                // neighbor->set_h() //@TODO: add in heuristics.  
+            }
+        }
 
+        bool is_goal(planNode* input) //introducing offset here. 
+        {
+            if(target_traj[2*(input->get_dim(2) + cumulative_time())] ==  input->get_dim(0) &&
+               target_traj[2*(input->get_dim(2) + cumulative_time())+1] ==  input->get_dim(1) )
+            return input->is_goal();
+        }
+
+        void start_timer()
+        {
+            startTime = std::chrono::system_clock::now();
+        }
+
+        int cumulative_time()
+        {
+            std::chrono::time_point<std::chrono::system_clock> curTime;
+            return std::chrono::duration_cast<std::chrono::seconds>(curTime - startTime).count();
+        }
+
+        bool goal_not_expanded()
+        {
+            return !expanded_goal;
+        }
+
+        void evaluate_neighbor(planNode* current, std::vector<int> rel_direction)
+        {
+            planNode* temp_node = planNode(get_coords_from_rel(current->get_coords(), rel_direction));
+            if(!in_closed(temp_node)) //verify that the node is not in the closed list
+            {
+                update_cost(temp_node,current->get_g());
+                temp_node -> set_prev(current);
+                add_to_open(temp_node);
+            }
+
+            if(current->is_goal())
+            {
+                mark_expanded(current); //could probably just check the closed list for goals.
+                //Verify that goals are actually populated. !!!!!
+            }
         }
 
 
-    
-   
 
- 
 
 };
 
-//==========================================================================================
-class kataPlanner
+
+class kataPlanner3D : public kataPlanner
 {
-private:
-    /* data */
-public:
-    kataPlanner(/* args */);
-    ~kataPlanner();
+    public:
+        #define axes 3 
+        double*	heuristic_map;
+
+
+        // kataPlanner3D();
+        
+        void evaluate_neighbors(planNode* current)
+        {
+            for(int i = 0; i < NUMDIRS; ++i)
+            {
+                evaluate_neighbor(current, std::vector<int> relative_dim{ dX[i], dY[i], current->get_dim[2] + 1 });
+            }
+             
+        }
+
+        void generate_heuristic()
+        {
+            //@TODO: Fill in
+            std::cout << "Running heuristic. " << std::endl;
+
+        }
+
+
+        void generate_path()
+        {
+            planNode* start = planNode(std::vector<int> coords{robotposeX,robotposeY,0});
+            add_to_open(start);
+
+            while(!open_is_empty() && goal_not_expanded())  //at this point, the first goal has been reached. But need to validate that it is at the right time
+            {
+                planNode* current = get_from_open();
+                evaluate_neighbors(current);
+                add_to_closed(current);
+            }
+            populate_path(last_found_goal);
+        }
+
+        void populate_path(planNode* goal)
+        {
+            planNode* current = goal; 
+            planNode* prev = goal->get_prev_ptr();
+
+            while(!(current->get_is_start()))
+            {
+                // path.push_back(current->get_dim(0) - prev->get_dim(0));
+                // path.push_back(current->get_dim(1) - prev->get_dim(1));
+                path.insert(path.begin(), (current->get_dim(1) - prev->get_dim(1))); //puts at the beginning. 
+                path.insert(path.begin(), (current->get_dim(0) - prev->get_dim(0)));
+                current = prev;
+                prev = current->get_prev_ptr();
+            } 
+        }
+
+        int get_x_dir(int t_step)
+        {
+            return path[2*t_step];
+        }
+
+        int get_y_dir(int t_step)
+        {
+            return path[(2*t_step) + 1];
+        }
+
+
 };
