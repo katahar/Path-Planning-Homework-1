@@ -47,7 +47,7 @@
 #define NUMOFDIRS 8
 
 bool first_run_complete = false; 
-kataPlanner3D 3D_planner;
+kataPlanner3D planner_3d;
 int time_count = 0; 
 
 static void planner(
@@ -73,13 +73,13 @@ static void planner(
 
     if(!first_run_complete)
     {
-        3D_planner = kataPlanner3D(map, x_size, y_size, target_traj, target_steps, collision_thresh, robotposeXcorrected, robotposeYcorrected);
-        3D_planner.generate_plan();
+        planner_3d = kataPlanner3D(map, x_size, y_size, target_traj, target_steps, collision_thresh, robotposeXcorrected, robotposeYcorrected);
+        planner_3d.generate_path();
     }
     else
     {
-        action_ptr[0] = 3D_planner.get_x_dir(time_count);
-        action_ptr[1] = 3D_planner.get_y_dir(time_count);
+        action_ptr[0] = planner_3d.get_x_dir(time_count);
+        action_ptr[1] = planner_3d.get_y_dir(time_count);
     }
 
     //===================================================
@@ -212,5 +212,5 @@ void mexFunction( int nlhs, mxArray *plhs[],
     /* Do the actual planning in a subroutine */
     planner(map, collision_thresh, x_size, y_size, robotposeX, robotposeY, target_steps, targettrajV, targetposeX, targetposeY, curr_time, &action_ptr[0]);
     // printf("DONE PLANNING!\n");
-    return;   
+    return;
 }

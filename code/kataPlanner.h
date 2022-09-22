@@ -27,7 +27,7 @@
 //==========================================================================================
 class kataPlanner
 {
-     protected:
+    protected:
         #define NUMDIRS 9
         double*	map;
         double* target_traj;
@@ -44,7 +44,7 @@ class kataPlanner
         std::map<int,planNode*> open_list_loc_sorted;
 
         
-        // int hash_base; 
+        int hash_base; 
         std::chrono::time_point<std::chrono::system_clock> startTime;
         int elapsed_time; 
         bool expanded_goal = false; 
@@ -58,7 +58,11 @@ class kataPlanner
 
         
     public: 
-        kataPlanner();
+        kataPlanner()
+        {
+            //empty;
+        }
+
         kataPlanner(double* map_in, int x_size, int y_size, double* target_traj_in, int target_steps, int col_thresh, int robotposeX, int robotposeY)
         {
             this -> target_steps = target_steps;
@@ -69,14 +73,14 @@ class kataPlanner
             this -> robotposeY = robotposeY;
             this -> x_size = x_size;
             this -> y_size = y_size; 
-            this -> find_hash_base()
-            start_timer()
+            this -> find_hash_base();
+            start_timer();
         } 
 
         int find_hash_base()
         {       
             int temp = std::max(x_size,y_size);
-            int hash_base = 1; 
+            hash_base = 1; 
              while(temp != 0) 
             {
                 temp = temp / 10;
@@ -170,7 +174,7 @@ class kataPlanner
             std::multimap<double,planNode*>::iterator temp = open_list_f_sorted.find(f_lookup);
             if(temp != open_list_f_sorted.end())
             {
-                for(std::multimap<double, customClass*>::iterator itr = temp; itr->first == f_lookup; itr++)
+                for(std::multimap<double, planNode*>::iterator itr = temp; itr->first == f_lookup; itr++)
                 {
                     if(itr->second == input)
                     {
@@ -196,10 +200,10 @@ class kataPlanner
                 std::multimap<double,planNode*>::iterator first_itr = open_list_f_sorted.begin();
                 planNode* ret_val = first_itr->second;
                 open_list_f_sorted.erase(first_itr);
-                open_list_checker.erase(get_hash_key(ret_val));
+                open_list_loc_sorted.erase(get_hash_key(ret_val));
                 return ret_val;
             }
-            std::cout << 'open list is empty!' << std::endl;
+            std::cout << "open list is empty!" << std::endl;
             return nullptr;
         }
 
@@ -233,7 +237,7 @@ class kataPlanner
 
         void set_costs(planNode* neighbor, double cumulative_cost)
         {
-            if(!(neighbor-> set_c(map[get_map_ind(neighbor->get_x(),node->get_y())], collision_thresh))); //true if obstacle
+            if(!(neighbor-> set_c(map[get_map_ind(neighbor->get_dim(0),neighbor->get_dim(1))], collision_thresh))); //true if obstacle
             {
                 neighbor->set_g_cumulative(cumulative_cost); //node adds cost to the provided cumulative cost. 
                 // neighbor->set_h() //@TODO: add in heuristics.  
@@ -259,7 +263,7 @@ class kataPlanner
                 //removing from f_sorted open list
                 double cur_f = iter->second->get_f();
                 std::multimap<double,planNode*>::iterator del_iter = open_list_f_sorted.find(cur_f);
-                for(std::multimap<double, customClass*>::iterator for_itr = del_iter; for_itr->first == cur_f; for_itr++)
+                for(std::multimap<double, planNode*>::iterator for_itr = del_iter; for_itr->first == cur_f; for_itr++)
                 {
                     if(for_itr->second == input)
                     {
@@ -279,10 +283,14 @@ class kataPlanner
 
         bool is_goal(planNode* input) //introducing offset here. 
         {
-            int elapsed = cumulative_time()
+            int elapsed = cumulative_time();
             if(target_traj[2*(input->get_dim(2) + elapsed)] ==  input->get_dim(0) &&
                target_traj[2*(input->get_dim(2) + elapsed)+1] ==  input->get_dim(1) )
-            return input->is_goal();
+               {
+                    input->set_is_goal(true);
+                    return true;
+               }
+            return false;
         }
 
         void start_timer()
@@ -313,9 +321,9 @@ class kataPlanner
         void evaluate_neighbor(planNode* current, std::vector<int> rel_direction)
         {
             std::vector<int> new_coords = get_coords_from_rel(current->get_coords(), rel_direction);
-            if(valid_coords(new_coords)
+            if(valid_coords(new_coords))
             {
-                planNode* temp_node = planNode(new_coords);
+                planNode* temp_node = planNode(new_coords).get_ptr();
                 if(!in_closed(temp_node)) //verify that the node is not in the closed list
                 {
                     if(!in_open(temp_node)) //not already in open, can be added as a new planNode
@@ -340,9 +348,6 @@ class kataPlanner
 
         }
 
-
-
-
 };
 
 
@@ -353,13 +358,27 @@ class kataPlanner3D : public kataPlanner
         double*	heuristic_map;
 
 
-        // kataPlanner3D();
+        kataPlanner3D()
+        {
+            //do nothing.
+        }
+
+         kataPlanner3D(double* map_in, int x_size, int y_size, double* target_traj_in, int target_steps, int col_thresh, int robotposeX, int robotposeY)
+        :kataPlanner(map_in, x_size, y_size, target_traj_in, target_steps, col_thresh, robotposeX, robotposeY)
+        {
+            //nothing different.
+        }
+
         
         void evaluate_neighbors(planNode* current)
         {
             for(int i = 0; i < NUMDIRS; ++i)
             {
-                evaluate_neighbor(current, std::vector<int> relative_dim{ dX[i], dY[i], current->get_dim[2] + 1 });
+                std::vector<int> relative_dim;
+                relative_dim.push_back(dX[i]);
+                relative_dim.push_back(dY[i]);
+                relative_dim.push_back(current->get_dim(2) + 1);
+                evaluate_neighbor(current,relative_dim);
             }
              
         }
@@ -374,7 +393,11 @@ class kataPlanner3D : public kataPlanner
 
         void generate_path()
         {
-            planNode* start = planNode(std::vector<int> coords{robotposeX,robotposeY,0});
+            std::vector<int> start_coords; 
+            start_coords.push_back(robotposeX);
+            start_coords.push_back(robotposeY);
+            start_coords.push_back(0);
+            planNode* start = planNode(start_coords).get_ptr();
             add_to_open(start);
 
             while(!open_is_empty() && goal_not_expanded())  //at this point, the first goal has been reached. But need to validate that it is at the right time
@@ -404,7 +427,7 @@ class kataPlanner3D : public kataPlanner
 
         int get_x_dir(int t_step)
         {
-            return path[2*t_step];z
+            return path[2*t_step];
         }
 
         int get_y_dir(int t_step)
