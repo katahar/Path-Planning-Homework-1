@@ -6,8 +6,8 @@ class planNode
 {
     private:
         std::vector<int> coordinates;
-        double f = 0.0;
-        double g = std::numeric_limits<int>::max();
+        double f = std::numeric_limits<double>::max();
+        double g = std::numeric_limits<double>::max();
         double h = 0.0;
         double c = 0.0;
         // int prev_t;

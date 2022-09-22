@@ -140,7 +140,7 @@ class kataPlanner
 
         bool in_open(planNode* input)
         {
-            if(open_list_loc_sorted.find(get_hash_key(input)) != open_list_checker.end())
+            if(open_list_loc_sorted.find(get_hash_key(input)) != open_list_loc_sorted.end())
             {
                 return true;
             }
@@ -152,7 +152,7 @@ class kataPlanner
             // this -> open_list.push_back(input);   
             // this -> open_list_checker.insert(std::pair<int,int>(this->get_hash_key(input),input));
             open_list_loc_sorted.insert(std::pair<int,planNode*>(this->get_hash_key(input),input));
-            open_list_f_sorted.insert(std::pair<int,planNode*>(input->get_f(),input));
+            open_list_f_sorted.insert(std::pair<double,planNode*>(input->get_f(),input));
         }
 
         // planNode* get_from_open()
@@ -163,20 +163,50 @@ class kataPlanner
         //     return ret_val;  
         // }
 
-        planNode* get_from_open(planNode* input)
+        planNode* get_from_open(planNode* input) //used to remove a specific node. Unsure of the final use of this function. 
         {           
+            planNode* ret_val;
             double f_lookup = input->get_f();
-            open_list_f_sorted.
-            
-            open_list_checker.erase(get_hash_key(input));
+            std::multimap<double,planNode*>::iterator temp = open_list_f_sorted.find(f_lookup);
+            if(temp != open_list_f_sorted.end())
+            {
+                for(std::multimap<double, customClass*>::iterator itr = temp; itr->first == f_lookup; itr++)
+                {
+                    if(itr->second == input)
+                    {
+                        // std::cout << "Found the search iterator!" << std::endl;
+                        ret_val = input; 
+                        open_list_f_sorted.erase(itr);
+                        open_list_loc_sorted.erase(get_hash_key(input));
+                        return ret_val;       
+                    }
+                }
+            }
+            else
+            {
+                std::cout << "Value not found :(  " << std::endl;
+                return nullptr;  
+            }
+        }
 
-            return ret_val;  
+        planNode* get_next_from_open() //pulls the node with the next best f value. 
+        {           
+            if(!open_list_f_sorted.empty())
+            {
+                std::multimap<double,planNode*>::iterator first_itr = open_list_f_sorted.begin();
+                planNode* ret_val = first_itr->second;
+                open_list_f_sorted.erase(first_itr);
+                open_list_checker.erase(get_hash_key(ret_val));
+                return ret_val;
+            }
+            std::cout << 'open list is empty!' << std::endl;
+            return nullptr;
         }
 
 
         bool open_is_empty()
         {
-            return open_list.empty();
+            return open_list_loc_sorted.empty();
         }
 
         void add_to_closed(planNode* input)
@@ -201,12 +231,49 @@ class kataPlanner
             expanded_goal = true;
         }
 
-        void update_cost(planNode* neighbor, double cumulative_cost)
+        void set_costs(planNode* neighbor, double cumulative_cost)
         {
             if(!(neighbor-> set_c(map[get_map_ind(neighbor->get_x(),node->get_y())], collision_thresh))); //true if obstacle
             {
                 neighbor->set_g_cumulative(cumulative_cost); //node adds cost to the provided cumulative cost. 
                 // neighbor->set_h() //@TODO: add in heuristics.  
+            }
+        }
+
+        bool update_cost_existing(planNode* input, double cumulative_cost)
+        {
+            //evaluate if this is a lower cost. 
+            std::map<int, planNode*>::iterator iter = open_list_loc_sorted.find(get_hash_key(input));
+            double current_g = iter->second->get_g();
+
+            double new_g = cumulative_cost + iter->second->get_c(); //because C and H shouldn't change based on path
+            if(current_g < new_g ) //already optimal
+            {
+                //do nothing. Dump the input. 
+                delete input;
+                input = nullptr;
+                return false;
+            }
+            else //new calculated value is improved. Need to update. 
+            {
+                //removing from f_sorted open list
+                double cur_f = iter->second->get_f();
+                std::multimap<double,planNode*>::iterator del_iter = open_list_f_sorted.find(cur_f);
+                for(std::multimap<double, customClass*>::iterator for_itr = del_iter; for_itr->first == cur_f; for_itr++)
+                {
+                    if(for_itr->second == input)
+                    {
+                        open_list_f_sorted.erase(for_itr); 
+                    }
+                }
+                //----------
+
+                //setting the new g value
+                input->set_g_cumulative(cumulative_cost);
+
+                //reinserting into f_sorted open list
+                open_list_f_sorted.insert(std::pair<double,planNode*>(input->get_f(),input)); 
+                return true;
             }
         }
 
@@ -234,29 +301,43 @@ class kataPlanner
             return !expanded_goal;
         }
 
+        bool valid_coords(std::vector<int> input)
+        {
+            if(input[0] > -1 && input[1] > -1 && input[0] < x_size && input[1] < y_size)
+            {
+                return true; 
+            }
+            return false; 
+        }
+
         void evaluate_neighbor(planNode* current, std::vector<int> rel_direction)
         {
-            planNode* temp_node = planNode(get_coords_from_rel(current->get_coords(), rel_direction));
-            if(!in_closed(temp_node)) //verify that the node is not in the closed list
+            std::vector<int> new_coords = get_coords_from_rel(current->get_coords(), rel_direction);
+            if(valid_coords(new_coords)
             {
-                if(!in_open(temp_node))
+                planNode* temp_node = planNode(new_coords);
+                if(!in_closed(temp_node)) //verify that the node is not in the closed list
                 {
-                    update_cost(temp_node,current->get_g());
-                    temp_node -> set_prev(current);
-                    add_to_open(temp_node);
+                    if(!in_open(temp_node)) //not already in open, can be added as a new planNode
+                    {
+                        set_costs(temp_node,current->get_g());
+                        temp_node -> set_prev(current);
+                        add_to_open(temp_node);
+                    }
+                    else //meaning that it is already in open list, with a different g value.
+                    {
+                        temp_node -> set_prev(current);
+                        update_cost_existing(temp_node,current->get_g());
+                    }
                 }
-                else //meaning that it is already in open list, with a different g value.
+
+                if(current->is_goal())
                 {
-                    delete temp_node;
-                    temp_node = 
+                    mark_expanded(current); //could probably just check the closed list for goals.
+                    //Verify that goals are actually populated. !!!!!
                 }
             }
 
-            if(current->is_goal())
-            {
-                mark_expanded(current); //could probably just check the closed list for goals.
-                //Verify that goals are actually populated. !!!!!
-            }
         }
 
 
@@ -298,7 +379,7 @@ class kataPlanner3D : public kataPlanner
 
             while(!open_is_empty() && goal_not_expanded())  //at this point, the first goal has been reached. But need to validate that it is at the right time
             {
-                planNode* current = get_from_open();
+                planNode* current = get_next_from_open();
                 evaluate_neighbors(current);
                 add_to_closed(current);
             }
@@ -323,7 +404,7 @@ class kataPlanner3D : public kataPlanner
 
         int get_x_dir(int t_step)
         {
-            return path[2*t_step];
+            return path[2*t_step];z
         }
 
         int get_y_dir(int t_step)
