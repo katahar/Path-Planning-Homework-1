@@ -1,2 +1,6 @@
 
 *.exe
+
+code/Testing/.vscode/settings.json
+
+*.json

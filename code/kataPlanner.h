@@ -37,10 +37,13 @@ class kataPlanner
         int collision_thresh;
         int x_size;
         int y_size;
-        // int num_dimensions = 2; 
-        std::priority_queue<planNode*, std::vector<planNode*>, std::greater<std::vector<planNode*>::value_type> > open_list;
-        // std::map<int,planNode*> open_list_checker;
+        // std::priority_queue<planNode*, std::vector<planNode*>, std::greater<std::vector<planNode*>::value_type> > open_list;
         std::unordered_set <planNode*> closed_list; 
+
+        std::multimap<double,planNode*> open_list_f_sorted;
+        std::map<int,planNode*> open_list_loc_sorted;
+
+        
         // int hash_base; 
         std::chrono::time_point<std::chrono::system_clock> startTime;
         int elapsed_time; 
@@ -66,31 +69,32 @@ class kataPlanner
             this -> robotposeY = robotposeY;
             this -> x_size = x_size;
             this -> y_size = y_size; 
-            // this -> find_hash_base()
+            this -> find_hash_base()
+            start_timer()
         } 
 
-        // int find_hash_base()
-        // {       
-        //     int temp = std::max(x_size,y_size);
-        //     int hash_base = 1; 
-        //      while(temp != 0) 
-        //     {
-        //         temp = temp / 10;
-        //         hash_base*=10;
-        //     }
-        //     hash_base*=10;
-        // }
+        int find_hash_base()
+        {       
+            int temp = std::max(x_size,y_size);
+            int hash_base = 1; 
+             while(temp != 0) 
+            {
+                temp = temp / 10;
+                hash_base*=10;
+            }
+            hash_base*=10;
+        }
 
-        // int get_hash_key(planNode* input)
-        // {
-        //     std::vector<int> coordinates = input -> get_coords();
-        //     int key; 
-        //     for(int i = 0; i < coordinates.size(); i++)
-        //     {
-        //         key = key + (coordinates[i] * pow(hash_base,i));
-        //     }
-        //     return key;
-        // }
+        int get_hash_key(planNode* input)
+        {
+            std::vector<int> coordinates = input -> get_coords();
+            int key; 
+            for(int i = 0; i < coordinates.size(); i++)
+            {
+                key = key + (coordinates[i] * pow(hash_base,i));
+            }
+            return key;
+        }
 
         ~kataPlanner()
         {
@@ -134,34 +138,40 @@ class kataPlanner
             return false; 
         }
 
-        // bool is_in_open(planNode* input)
-        // {
-        //     if(open_list_checker.find(get_hash_key(input)) != open_list_checker.end())
-        //     {
-        //         return true;
-        //     }
-        //     return false;
-        // }
+        bool in_open(planNode* input)
+        {
+            if(open_list_loc_sorted.find(get_hash_key(input)) != open_list_checker.end())
+            {
+                return true;
+            }
+            return false;
+        }
 
         void add_to_open(planNode* input)
         {
-            this -> open_list.push_back(input);   
+            // this -> open_list.push_back(input);   
             // this -> open_list_checker.insert(std::pair<int,int>(this->get_hash_key(input),input));
+            open_list_loc_sorted.insert(std::pair<int,planNode*>(this->get_hash_key(input),input));
+            open_list_f_sorted.insert(std::pair<int,planNode*>(input->get_f(),input));
         }
 
-        planNode* get_from_open()
-        {
-            planNode* ret_val = open_list.top();
-            open_list.pop();
-            // open_list_checker.erase(get_hash_key(ret_val));
-            return ret_val;  
-        }
-
-        // planNode* get_from_open(planNode* input)
-        // {           
-        //     open_list_checker.erase(get_hash_key(input));
+        // planNode* get_from_open()
+        // {
+        //     planNode* ret_val = open_list.top();
+        //     open_list.pop();
+        //     // open_list_checker.erase(get_hash_key(ret_val));
         //     return ret_val;  
         // }
+
+        planNode* get_from_open(planNode* input)
+        {           
+            double f_lookup = input->get_f();
+            open_list_f_sorted.
+            
+            open_list_checker.erase(get_hash_key(input));
+
+            return ret_val;  
+        }
 
 
         bool open_is_empty()
@@ -191,9 +201,6 @@ class kataPlanner
             expanded_goal = true;
         }
 
-
-
-
         void update_cost(planNode* neighbor, double cumulative_cost)
         {
             if(!(neighbor-> set_c(map[get_map_ind(neighbor->get_x(),node->get_y())], collision_thresh))); //true if obstacle
@@ -205,8 +212,9 @@ class kataPlanner
 
         bool is_goal(planNode* input) //introducing offset here. 
         {
-            if(target_traj[2*(input->get_dim(2) + cumulative_time())] ==  input->get_dim(0) &&
-               target_traj[2*(input->get_dim(2) + cumulative_time())+1] ==  input->get_dim(1) )
+            int elapsed = cumulative_time()
+            if(target_traj[2*(input->get_dim(2) + elapsed)] ==  input->get_dim(0) &&
+               target_traj[2*(input->get_dim(2) + elapsed)+1] ==  input->get_dim(1) )
             return input->is_goal();
         }
 
@@ -231,9 +239,17 @@ class kataPlanner
             planNode* temp_node = planNode(get_coords_from_rel(current->get_coords(), rel_direction));
             if(!in_closed(temp_node)) //verify that the node is not in the closed list
             {
-                update_cost(temp_node,current->get_g());
-                temp_node -> set_prev(current);
-                add_to_open(temp_node);
+                if(!in_open(temp_node))
+                {
+                    update_cost(temp_node,current->get_g());
+                    temp_node -> set_prev(current);
+                    add_to_open(temp_node);
+                }
+                else //meaning that it is already in open list, with a different g value.
+                {
+                    delete temp_node;
+                    temp_node = 
+                }
             }
 
             if(current->is_goal())

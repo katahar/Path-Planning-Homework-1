@@ -45,6 +45,10 @@ class planNode
             prevPos = nullptr;
         }
 
+        double round(double input)
+        {
+            return double(int(input*100)/100);
+        }
 
         void update_f()
         {
@@ -52,17 +56,17 @@ class planNode
         }
         void set_g(double g_in)
         {
-            this->g = g_in;
+            this->g = round(g_in);
             this->update_f();
         }
         void set_g_cumulative(double cumulative_cost) //assumes that cost for this node has already been assigned, will automatically add to given g
         {
-            this->g = cumulative_cost + this->c;
+            this->g = round(cumulative_cost) + this->c;
             this->update_f();
         }        
         void set_h(double h_in)
         {
-            this->h = h_in;
+            this->h = round(h_in);
             this->update_f();
         }
         void set_prev(planNode* prev)
