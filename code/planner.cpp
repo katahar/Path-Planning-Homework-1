@@ -1,6 +1,6 @@
 /*=================================================================
  *
- * planner.c
+ * planner.sc
  *
  *=================================================================*/
 #ifndef _MATH
@@ -73,13 +73,31 @@ static void planner(
 
     if(!first_run_complete)
     {
-        planner_3d = kataPlanner3D(map, x_size, y_size, target_traj, target_steps, collision_thresh, robotposeXcorrected, robotposeYcorrected);
-        planner_3d.generate_path();
+        mexPrintf("About to run constructor\n");
+
+        mexPrintf("%i \n", x_size);
+        mexPrintf("%i \n", y_size);
+        mexPrintf("%i \n", target_steps);
+        mexPrintf("%g \n", collision_thresh);
+        mexPrintf("%i \n", robotposeXcorrected);
+        mexPrintf("%i \n", robotposeYcorrected);
+        
+        
+
+        // kataPlanner base_test = kataPlanner(x_size, y_size, target_steps, collision_thresh, robotposeXcorrected, robotposeYcorrected);
+        planner_3d = kataPlanner3D(x_size, y_size, target_steps, collision_thresh, robotposeXcorrected, robotposeYcorrected);
+        mexPrintf("Constructotr done\n");
+
+        // planner_3d.generate_path();
+        first_run_complete = true;
+        mexPrintf("First run complete. \n");
+
     }
     else
     {
-        action_ptr[0] = planner_3d.get_x_dir(time_count);
-        action_ptr[1] = planner_3d.get_y_dir(time_count);
+        // mexPrintf("in subsequent runs\n");
+        // action_ptr[0] = planner_3d.get_x_dir(time_count);
+        // action_ptr[1] = planner_3d.get_y_dir(time_count);
     }
 
     //===================================================
@@ -89,6 +107,7 @@ static void planner(
     // mexPrintf("%i \n", int_val);
     // mexPrintf("%g \n", dub_val);
 
+    // mexPrintf("Line Number %s->%s:%d\n", __FILE__, __FUNCTION__, __LINE__);
 
     // mexPrintf("%g \n", map[GETMAPINDEXZEROED(i,j,x_size,y_size)]);
     // mexPrintf("x_size: %i, y_size: %i\n", x_size, y_size); 
@@ -133,8 +152,8 @@ static void planner(
     // }
     // robotposeX = robotposeX + bestX;
     // robotposeY = robotposeY + bestY;
-    // action_ptr[0] = robotposeX;
-    // action_ptr[1] = robotposeY;
+    action_ptr[0] = robotposeX;
+    action_ptr[1] = robotposeY;
     
     return;
 }
