@@ -63,30 +63,30 @@ class kataPlanner
             mexPrintf("Function %s start\n", __FUNCTION__);
         }
 
-        kataPlanner(int x_size, int y_size, int target_steps, int col_thresh, int robotposeX, int robotposeY)
+        kataPlanner(double*	map_in, int x_size, int y_size, int target_steps, double* target_traj_in, int col_thresh, int robotposeX, int robotposeY)
         {
             
             // mexPrintf("Function %s start\n", __FUNCTION__);
-            // this -> target_steps = target_steps;
+            this -> target_steps = target_steps;
             // mexPrintf("Function %s start\n", __FUNCTION__);
-            // this -> target_traj = target_traj_in;
+            this -> target_traj = target_traj_in;
             // mexPrintf("Function %s start\n", __FUNCTION__);
-            // this -> map =  map_in;
+            this -> map =  map_in;
             // mexPrintf("Function %s start\n", __FUNCTION__);
-            // this -> collision_thresh = col_thresh;
+            this -> collision_thresh = col_thresh;
             // mexPrintf("Function %s start\n", __FUNCTION__);
-            // this -> robotposeX = robotposeX;
+            this -> robotposeX = robotposeX;
             // mexPrintf("Function %s start\n", __FUNCTION__);
-            // this -> robotposeY = robotposeY;
+            this -> robotposeY = robotposeY;
             // mexPrintf("Function %s start\n", __FUNCTION__);
-            // this -> x_size = x_size;
+            this -> x_size = x_size;
             // mexPrintf("Function %s start\n", __FUNCTION__);
-            // this -> y_size = y_size; 
+            this -> y_size = y_size; 
             // mexPrintf("Pre hash base");
-            // this -> find_hash_base();
+            this -> find_hash_base();
             // mexPrintf("Post Hash base");
-            // start_timer();
-            // mexPrintf("Function %s end\n", __FUNCTION__);
+            start_timer();
+            mexPrintf("Function %s end\n", __FUNCTION__);
 
         } 
 
@@ -108,7 +108,11 @@ class kataPlanner
         {
             mexPrintf("Function %s start\n", __FUNCTION__);
 
-            std::vector<int> coordinates = input -> get_coords();
+            std::vector<int> coordinates; //= input -> get_coords();
+            coordinates.push_back(input->get_dim(0));
+            coordinates.push_back(input->get_dim(1));
+            coordinates.push_back(input->get_dim(2));
+
             int key; 
             for(int i = 0; i < coordinates.size(); i++)
             {
@@ -223,12 +227,15 @@ class kataPlanner
             if(!open_list_f_sorted.empty())
             {
                 std::multimap<double,planNode*>::iterator first_itr = open_list_f_sorted.begin();
-                planNode* ret_val = first_itr->second;
+                planNode* ret_val = first_itr->second->get_ptr(); //->get_ptr()
+                mexPrintf("pre erase value: %i\n",ret_val->get_dim(0));
                 open_list_f_sorted.erase(first_itr);
                 open_list_loc_sorted.erase(get_hash_key(ret_val));
+                mexPrintf("posg erase value: %i\n",ret_val->get_dim(0));
+
                 return ret_val;
             }
-            std::cout << "open list is empty!" << std::endl;
+            mexPrintf("open list is empty!");
             return nullptr;
         }
 
@@ -247,10 +254,12 @@ class kataPlanner
         std::vector<int> get_coords_from_rel(std::vector<int> base, std::vector<int> rel_direction)
         {
             mexPrintf("Function %s start\n", __FUNCTION__);
+            mexPrintf("Generating relative coordinate. \n");
             std::vector<int> ret_val; 
             for(int i = 0; i < base.size(); ++i)
             {
                 ret_val.push_back(base[i] + rel_direction[i]);
+                mexPrintf("axis %i: %i \n", i, (base[i] + rel_direction[i]) );
             }
             return ret_val;
         }
@@ -285,8 +294,8 @@ class kataPlanner
             if(current_g < new_g ) //already optimal
             {
                 //do nothing. Dump the input. 
-                delete input;
-                input = nullptr;
+                // delete input;
+                // input = nullptr;
                 return false;
             }
             else //new calculated value is improved. Need to update. 
@@ -349,42 +358,63 @@ class kataPlanner
             mexPrintf("Function %s start\n", __FUNCTION__);
             if(input[0] > -1 && input[1] > -1 && input[0] < x_size && input[1] < y_size)
             {
+                mexPrintf("Valid coordainates\n");
                 return true; 
             }
+            mexPrintf("not valid coordinates\n");
             return false; 
         }
 
+
         void evaluate_neighbor(planNode* current, std::vector<int> rel_direction)
         {
-             mexPrintf("Function %s start\n", __FUNCTION__);
+            mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
+            mexPrintf("Function %s start\n", __FUNCTION__);
            std::vector<int> new_coords = get_coords_from_rel(current->get_coords(), rel_direction);
+            mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
+
             if(valid_coords(new_coords))
             {
+                mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
                 planNode* temp_node = planNode(new_coords).get_ptr();
+                mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
                 if(!in_closed(temp_node)) //verify that the node is not in the closed list
                 {
+                    mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
                     if(!in_open(temp_node)) //not already in open, can be added as a new planNode
                     {
+                        mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
                         set_costs(temp_node,current->get_g());
+                        mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
                         temp_node -> set_prev(current);
+                        mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
                         add_to_open(temp_node);
+                        mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
                     }
                     else //meaning that it is already in open list, with a different g value.
                     {
+                        mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
                         temp_node -> set_prev(current);
+                        mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
                         update_cost_existing(temp_node,current->get_g());
+                        mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
                     }
                 }
 
                 if(current->is_goal())
                 {
+                    mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
                     mark_expanded(current); //could probably just check the closed list for goals.
+                    mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
                     //Verify that goals are actually populated. !!!!!
                 }
+                mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
             }
 
         }
 
+
+        
 };
 
 
@@ -397,14 +427,13 @@ class kataPlanner3D : public kataPlanner
 
         kataPlanner3D()
         {
-            mexPrintf("AAAAAA");
-             mexPrintf("Function %s start\n", __FUNCTION__);
+            mexPrintf("Function %s start\n", __FUNCTION__);
            //do nothing.
         }
         
         //double* map_in double* target_traj_in,
-         kataPlanner3D(int x_size, int y_size, int target_steps, int col_thresh, int robotposeX, int robotposeY)
-        :kataPlanner(x_size, y_size, target_steps, col_thresh, robotposeX, robotposeY)
+         kataPlanner3D(double*	map_in, int x_size, int y_size, int target_steps, double* target_traj, int col_thresh, int robotposeX, int robotposeY)
+        :kataPlanner(map_in, x_size, y_size, target_steps, target_traj, col_thresh, robotposeX, robotposeY)
         {
             mexPrintf("Function %s start\n", __FUNCTION__);
             //nothing different.
@@ -419,8 +448,21 @@ class kataPlanner3D : public kataPlanner
                 std::vector<int> relative_dim;
                 relative_dim.push_back(dX[i]);
                 relative_dim.push_back(dY[i]);
-                relative_dim.push_back(current->get_dim(2) + 1);
-                evaluate_neighbor(current,relative_dim);
+                relative_dim.push_back(1);
+
+                mexPrintf("Attempting to get coords\n");
+                current->get_coords();
+                mexPrintf("Done\n");
+                mexPrintf("entering if\n");
+                if(valid_coords(get_coords_from_rel(current->get_coords(), relative_dim)))
+                {
+                    mexPrintf("in if\n");
+                    evaluate_neighbor(current,relative_dim);
+                    mexPrintf("complete if\n");
+                }
+                mexPrintf("outside if\n");
+
+                
             }
              
         }
@@ -440,6 +482,9 @@ class kataPlanner3D : public kataPlanner
             start_coords.push_back(robotposeX);
             start_coords.push_back(robotposeY);
             start_coords.push_back(0);
+            mexPrintf("X start: %i \n", start_coords[0]);
+            mexPrintf("y start: %i \n", start_coords[1]);
+            mexPrintf("t start: %i \n", start_coords[2]);
             planNode* start = planNode(start_coords).get_ptr();
             add_to_open(start);
 

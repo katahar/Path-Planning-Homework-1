@@ -73,22 +73,21 @@ static void planner(
 
     if(!first_run_complete)
     {
-        mexPrintf("About to run constructor\n");
+        // mexPrintf("About to run constructor\n");
 
-        mexPrintf("%i \n", x_size);
-        mexPrintf("%i \n", y_size);
-        mexPrintf("%i \n", target_steps);
-        mexPrintf("%g \n", collision_thresh);
-        mexPrintf("%i \n", robotposeXcorrected);
-        mexPrintf("%i \n", robotposeYcorrected);
+        // mexPrintf("x_size: %i \n", x_size);
+        // mexPrintf("y_size: %i \n", y_size);
+        // mexPrintf("target_steps: %i \n", target_steps);
+        // mexPrintf("collision_thresh: %i \n", collision_thresh);
+        // mexPrintf("robotposeXcorrected: %i \n", robotposeXcorrected);
+        // mexPrintf("robotposeYcorrected: %i \n", robotposeYcorrected);
         
         
 
-        // kataPlanner base_test = kataPlanner(x_size, y_size, target_steps, collision_thresh, robotposeXcorrected, robotposeYcorrected);
-        planner_3d = kataPlanner3D(x_size, y_size, target_steps, collision_thresh, robotposeXcorrected, robotposeYcorrected);
+        planner_3d = kataPlanner3D(map, x_size, y_size, target_steps, target_traj, collision_thresh, robotposeXcorrected, robotposeYcorrected);
         mexPrintf("Constructotr done\n");
 
-        // planner_3d.generate_path();
+        planner_3d.generate_path();
         first_run_complete = true;
         mexPrintf("First run complete. \n");
 

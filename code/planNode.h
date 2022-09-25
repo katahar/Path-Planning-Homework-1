@@ -19,31 +19,29 @@ class planNode
         bool is_start = false; 
 
     public:
-        // planNode()
-        // {
-        //     this -> num_dims = 2; 
-        // }
-
         planNode(std::vector<int> input_coords)
         {
-            this -> coordinates = input_coords;
-            this -> num_dims = coordinates.size();
+            mexPrintf("~~~~~~Inside planNode constructor\n");
+            mexPrintf("~X coordinate: %i \n", input_coords[0]);
+            mexPrintf("~y coordinate: %i \n", input_coords[1]);
+            mexPrintf("~t coordinate: %i \n", input_coords[2]);
+            this -> coordinates.push_back(input_coords[0]);
+            this -> coordinates.push_back(input_coords[1]);
+            this -> coordinates.push_back(input_coords[2]);
+            this -> num_dims = this->coordinates.size();
         }
 
-        planNode(std::vector<int> input_coords, double c, double collision_thresh)
-        {
-            coordinates = input_coords;
-            num_dims = coordinates.size();
-            set_c(c);
-            set_collision_thresh(collision_thresh);
-            set_c(c, collision_thresh);
-        }      
-
-        ~planNode()
-        {
-            delete prevPos;
-            prevPos = nullptr;
-        }
+        // planNode(std::vector<int> input_coords, double c, double collision_thresh)
+        // {
+        //     mexPrintf("~~~~~~Inside secondary planNode constructor\n");
+        //     this -> coordinates.push_back(input_coords[0]);
+        //     this -> coordinates.push_back(input_coords[1]);
+        //     this -> coordinates.push_back(input_coords[2]);
+        //     num_dims = coordinates.size();
+        //     set_c(c);
+        //     set_collision_thresh(collision_thresh);
+        //     set_c(c, collision_thresh);
+        // }      
 
         double round(double input)
         {
@@ -74,13 +72,14 @@ class planNode
             this -> prevPos = prev;
         }
         
-        void set_coord(std::vector<int> coordinate_inputs, int num_dimensions)
-        {
-            for(int i = 0; i < num_dimensions; ++i)
-            {
-                this->coordinates[i] = coordinate_inputs[i];
-            }
-        }
+        // void set_coord(std::vector<int> coordinate_inputs, int num_dimensions)
+        // {
+        //     for(int i = 0; i < num_dimensions; ++i)
+        //     {
+        //         this->coordinates[i] = coordinate_inputs[i];
+        //     }
+        // }
+
         void set_c(double c)
         {
             this -> c = c;
@@ -131,6 +130,10 @@ class planNode
 
         std::vector<int> get_coords()
         {
+            mexPrintf("--ABout to return coords\n");
+            mexPrintf("--X coordinate: %i \n", coordinates[0]);
+            mexPrintf("--y coordinate: %i \n", coordinates[1]);
+            mexPrintf("--t coordinate: %i \n", coordinates[2]);
             return this->coordinates;
         }     
 
