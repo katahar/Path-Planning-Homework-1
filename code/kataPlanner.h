@@ -318,7 +318,7 @@ class kataPlanner
             expanded_goal = true;
         }
 
-        void set_costs(planNode* neighbor, double cumulative_cost)
+        void set_costs(planNode* neighbor, int cumulative_cost)
         {
             mexPrintf("Function %s start\n", __FUNCTION__);
             if(!(neighbor-> set_c(map[get_map_ind(neighbor->get_dim(0),neighbor->get_dim(1))], collision_thresh))); //true if obstacle
@@ -373,7 +373,7 @@ class kataPlanner
 
         bool is_goal(planNode* input) //introducing offset here. 
         {
-            mexPrintf("Function %s start\n", __FUNCTION__);
+            // mexPrintf("Function %s start\n", __FUNCTION__);
             int elapsed = cumulative_time();
             if(target_traj[2*(input->get_dim(2) + elapsed)] ==  input->get_dim(0) &&
                target_traj[2*(input->get_dim(2) + elapsed)+1] ==  input->get_dim(1) )
@@ -386,26 +386,26 @@ class kataPlanner
 
         void start_timer()
         {
-            mexPrintf("Function %s start\n", __FUNCTION__);
+            // mexPrintf("Function %s start\n", __FUNCTION__);
             startTime = std::chrono::system_clock::now();
         }
 
         int cumulative_time()
         {
-            mexPrintf("Function %s start\n", __FUNCTION__);
+            // mexPrintf("Function %s start\n", __FUNCTION__);
             std::chrono::time_point<std::chrono::system_clock> curTime;
             return std::chrono::duration_cast<std::chrono::seconds>(curTime - startTime).count();
         }
 
         bool goal_not_expanded()
         {
-            mexPrintf("Function %s start\n", __FUNCTION__);
+            // mexPrintf("Function %s start\n", __FUNCTION__);
             return !expanded_goal;
         }
 
         bool valid_coords(std::vector<int> input)
         {
-            mexPrintf("Function %s start\n", __FUNCTION__);
+            // mexPrintf("Function %s start\n", __FUNCTION__);
             if(input[0] > -1 && input[1] > -1 && input[0] < x_size && input[1] < y_size)
             {
                 mexPrintf("Valid coordaiFnates\n");
@@ -417,7 +417,7 @@ class kataPlanner
 
         bool valid_coords(int x1, int y1, int t1 )
         {
-            mexPrintf("Function %s start\n", __FUNCTION__);
+            // mexPrintf("Function %s start\n", __FUNCTION__);
             if(x1 > -1 && y1 > -1 && x1 < x_size && y1 < y_size)
             {
                 mexPrintf("Valid coordaiFnates\n");
@@ -523,6 +523,10 @@ class kataPlanner
             //         // mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
             //     }
             }
+            else
+            {
+                mexPrintf("---------------------------------------------------------------------\n");
+            }
 
             if(current->is_goal())
             {
@@ -531,7 +535,7 @@ class kataPlanner
                 // mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
                 //Verify that goals are actually populated. !!!!!
             }
-            mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
+            // mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
             // }
 
         }
@@ -562,7 +566,7 @@ class kataPlanner3D : public kataPlanner
 
         kataPlanner3D()
         {
-            mexPrintf("Function %s start\n", __FUNCTION__);
+            // mexPrintf("Function %s start\n", __FUNCTION__);
            //do nothing.
         }
         
@@ -570,14 +574,14 @@ class kataPlanner3D : public kataPlanner
          kataPlanner3D(double*	map_in, int x_size, int y_size, int target_steps, double* target_traj, int col_thresh, int robotposeX, int robotposeY)
         :kataPlanner(map_in, x_size, y_size, target_steps, target_traj, col_thresh, robotposeX, robotposeY)
         {
-            mexPrintf("Function %s start\n", __FUNCTION__);
+            // mexPrintf("Function %s start\n", __FUNCTION__);
             //nothing different.
         }
 
         
         void evaluate_neighbors(planNode* current)
         {
-            mexPrintf("Function %s start\n", __FUNCTION__);
+            // mexPrintf("Function %s start\n", __FUNCTION__);
             for(int i = 0; i < NUMDIRS; ++i)
             {
                 std::vector<int> relative_dim;
@@ -604,7 +608,7 @@ class kataPlanner3D : public kataPlanner
 
         void generate_heuristic()
         {
-            mexPrintf("Function %s start\n", __FUNCTION__);
+            // mexPrintf("Function %s start\n", __FUNCTION__);
             //@TODO: Fill in
             std::cout << "Running heuristic. " << std::endl;
 
@@ -612,7 +616,7 @@ class kataPlanner3D : public kataPlanner
 
         void generate_path()
         {
-            mexPrintf("Function %s start\n", __FUNCTION__);
+            // mexPrintf("Function %s start\n", __FUNCTION__);
             // std::vector<int> start_coords; 
             // start_coords.push_back(robotposeX);
             // start_coords.push_back(robotposeY);
@@ -641,7 +645,8 @@ class kataPlanner3D : public kataPlanner
 
         void populate_path(planNode* goal)
         {
-            mexPrintf("Function %s start\n", __FUNCTION__);
+            // mexPrintf("Function %s start\n", __FUNCTION__);
+            mexPrintf("Populating path.\n");
             planNode* current = goal; 
             planNode* prev = goal->get_prev_ptr();
 
@@ -658,13 +663,13 @@ class kataPlanner3D : public kataPlanner
 
         int get_x_dir(int t_step)
         {
-            mexPrintf("Function %s start\n", __FUNCTION__);
+            // mexPrintf("Function %s start\n", __FUNCTION__);
             return path[2*t_step];
         }
 
         int get_y_dir(int t_step)
         {
-            mexPrintf("Function %s start\n", __FUNCTION__);
+            // mexPrintf("Function %s start\n", __FUNCTION__);
             return path[(2*t_step) + 1];
         }
 

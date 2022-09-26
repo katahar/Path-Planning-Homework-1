@@ -6,10 +6,10 @@ class planNode
 {
     private:
         // std::vector<int> coordinates;
-        double f = std::numeric_limits<double>::max();
-        double g = std::numeric_limits<double>::max();
-        double h = 0.0;
-        double c = 0.0;
+        int f = std::numeric_limits<double>::max();
+        int g = std::numeric_limits<double>::max();
+        int h = 0.0;
+        int c = 0.0;
         // int prev_t;
         bool flag_is_goal = false; 
         bool is_obstacle = false; 
@@ -50,9 +50,9 @@ class planNode
             x_coord = x;
             y_coord = y;
             t_coord = t;
-            mexPrintf("~~~~~~Inside planNode constructor 3D\n");
-            mexPrintf("~X coordinate: %d \n", x_coord);
-            mexPrintf("~y coordinate: %d \n", y_coord);
+            // mexPrintf("~~~~~~Inside planNode constructor 3D\n");
+            // mexPrintf("~X coordinate: %d \n", x_coord);
+            // mexPrintf("~y coordinate: %d \n", y_coord);
             mexPrintf("~t coordinate: %d \n", t_coord);
 
             num_dims = 3; 
@@ -88,35 +88,35 @@ class planNode
         //     set_c(c, collision_thresh);
         // }      
 
-        double round(double input)
-        {
-            return double(int(input*100)/100);
-        }
+        // double round(double input)
+        // {
+        //     return double(int(input*100)/100);
+        // }
 
         void update_f()
         {
             // this->f = this->g + this->h;
             f = g + h;
         }
-        void set_g(double g_in)
+        void set_g(int g_in)
         {
             // this->g = round(g_in);
             // this->update_f();
-            g = round(g_in);
+            g = g_in;
             update_f();
         }
-        void set_g_cumulative(double cumulative_cost) //assumes that cost for this node has already been assigned, will automatically add to given g
+        void set_g_cumulative(int cumulative_cost) //assumes that cost for this node has already been assigned, will automatically add to given g
         {
             // this->g = round(cumulative_cost) + this->c;
             // this->update_f();
-            g = round(cumulative_cost) + c;
+            g = cumulative_cost + c;
             update_f();
         }        
-        void set_h(double h_in)
+        void set_h(int h_in)
         {
             // this->h = round(h_in);
             // this->update_f();
-            h = round(h_in);
+            h = h_in;
             update_f();
         }
         void set_prev(planNode* prev)
@@ -133,12 +133,12 @@ class planNode
         //     }
         // }
 
-        void set_c(double c_in)
+        void set_c(int c_in)
         {
             // this -> c = c_in;
             c = c_in;
         }
-        bool set_c(double c_in, double collision_thresh)
+        bool set_c(int c_in, int collision_thresh)
         {
             set_c(c_in);
             if(c_in >= collision_thresh)
@@ -148,7 +148,7 @@ class planNode
             return is_obstacle;
         }
 
-        void set_collision_thresh(double thresh_in)
+        void set_collision_thresh(int thresh_in)
         {
             // this->collision_thresh = thresh_in;
             collision_thresh = thresh_in;
@@ -160,22 +160,22 @@ class planNode
             flag_is_goal = input;
         }
 
-        double get_g()
+        int get_g()
         {
             // return this->g;
             return g;
         }
-        double get_f()
+        int get_f()
         {
             // return this->f;
             return f;
         }
-        double get_h()
+        int get_h()
         {
             // return this->h;
             return h;
         }
-        double get_c()
+        int get_c()
         {
             // return this->c;
             return c;
