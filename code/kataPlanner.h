@@ -40,11 +40,11 @@ class kataPlanner
         int collision_thresh;
         int x_size;
         int y_size;
-        // std::priority_queue<planNode*, std::vector<planNode*>, std::greater<std::vector<planNode*>::value_type> > open_list;
+        std::priority_queue<planNode*, std::vector<planNode*>, std::greater<std::vector<planNode*>::value_type> > open_list;
         std::unordered_set <planNode*> closed_list; 
 
-        std::multimap<double,planNode*> open_list_f_sorted;
-        std::map<std::tuple<int, int, int>,planNode*> open_list_loc_sorted;
+        // std::multimap<double,planNode*> open_list_f_sorted;
+        // std::map<std::tuple<int, int, int>,planNode*> open_list_loc_sorted;
 
         
         // int hash_base; 
@@ -107,27 +107,27 @@ class kataPlanner
         //     hash_base*=10;
         // }
 
-        std::tuple<int, int, int> get_hash_key(planNode* input)
-        {
-            mexPrintf("Function %s start\n", __FUNCTION__);
+        // std::tuple<int, int, int> get_hash_key(planNode* input)
+        // {
+        //     mexPrintf("Function %s start\n", __FUNCTION__);
 
-            // std::vector<int> coordinates; //= input -> get_coords();
-            // coordinates.push_back(input->get_dim(0));
-            // coordinates.push_back(input->get_dim(1));
-            // coordinates.push_back(input->get_dim(2));
+        //     // std::vector<int> coordinates; //= input -> get_coords();
+        //     // coordinates.push_back(input->get_dim(0));
+        //     // coordinates.push_back(input->get_dim(1));
+        //     // coordinates.push_back(input->get_dim(2));
 
-            // int key; 
-            // for(int i = 0; i < coordinates.size(); i++)
-            // {
-            //     key = key + (coordinates[i] * pow(hash_base,i));
-            // }
-            // return key;
-            mexPrintf("**ABout to hash key\n");
-            mexPrintf("**X coordinate: %d \n", input->get_dim(0));
-            mexPrintf("**y coordinate: %d \n", input->get_dim(1));
-            mexPrintf("**t coordinate: %d \n", input->get_dim(2));
-            return std::make_tuple(input->get_dim(0),input->get_dim(1), input->get_dim(2));
-        }
+        //     // int key; 
+        //     // for(int i = 0; i < coordinates.size(); i++)
+        //     // {
+        //     //     key = key + (coordinates[i] * pow(hash_base,i));
+        //     // }
+        //     // return key;
+        //     mexPrintf("**ABout to hash key\n");
+        //     mexPrintf("**X coordinate: %d \n", input->get_dim(0));
+        //     mexPrintf("**y coordinate: %d \n", input->get_dim(1));
+        //     mexPrintf("**t coordinate: %d \n", input->get_dim(2));
+        //     return std::make_tuple(input->get_dim(0),input->get_dim(1), input->get_dim(2));
+        // }
 
         // ~kataPlanner()
         // {
@@ -185,21 +185,22 @@ class kataPlanner
             return false; 
         }
 
-        bool in_open(planNode* input)
-        {
-            mexPrintf("Function %s start\n", __FUNCTION__);
-            if(open_list_loc_sorted.find(get_hash_key(input)) != open_list_loc_sorted.end())
-            {
-                return true;
-            }
-            return false;
-        }
+        // bool in_open(planNode* input)
+        // {
+        //     mexPrintf("Function %s start\n", __FUNCTION__);
+        //     if(open_list_loc_sorted.find(get_hash_key(input)) != open_list_loc_sorted.end())
+        //     {
+        //         return true;
+        //     }
+        //     return false;
+        // }
 
         void add_to_open(planNode* input)
         {
-            mexPrintf("Function %s start\n", __FUNCTION__);
-            open_list_loc_sorted.insert(std::pair<std::tuple<int, int, int>,planNode*>(this->get_hash_key(input),input));
-            open_list_f_sorted.insert(std::pair<double,planNode*>(input->get_f(),input));
+            // mexPrintf("Function %s start\n", __FUNCTION__);
+            // open_list_loc_sorted.insert(std::pair<std::tuple<int, int, int>,planNode*>(this->get_hash_key(input),input));
+            // open_list_f_sorted.insert(std::pair<double,planNode*>(input->get_f(),input));
+            open_list.push(input);
         }
 
         // planNode* get_from_open()
@@ -210,57 +211,65 @@ class kataPlanner
         //     return ret_val;  
         // }
 
-        planNode* get_from_open(planNode* input) //used to remove a specific node. Unsure of the final use of this function. 
-        {           
-            mexPrintf("Function %s start\n", __FUNCTION__);
-            planNode* ret_val;
-            double f_lookup = input->get_f();
-            std::multimap<double,planNode*>::iterator temp = open_list_f_sorted.find(f_lookup);
-            if(temp != open_list_f_sorted.end())
-            {
-                for(std::multimap<double, planNode*>::iterator itr = temp; itr->first == f_lookup; itr++)
-                {
-                    if(itr->second == input)
-                    {
-                        std::cout << "Found the search iterator!" << std::endl;
-                        ret_val = input; 
-                        open_list_f_sorted.erase(itr);
-                        open_list_loc_sorted.erase(get_hash_key(input));
-                        return ret_val;       
-                    }
-                }
-                mexPrintf("Failed to find iterator in given f\n");
-            }
-            else
-            {
-                mexPrintf("Failed lookup with f value\n");
-                std::cout << "Value not found :(  " << std::endl;
-                return nullptr;  
-            }
-        }
+        // planNode* get_from_open(planNode* input) //used to remove a specific node. Unsure of the final use of this function. 
+        // {           
+        //     mexPrintf("Function %s start\n", __FUNCTION__);
+        //     planNode* ret_val;
+        //     double f_lookup = input->get_f();
+        //     std::multimap<double,planNode*>::iterator temp = open_list_f_sorted.find(f_lookup);
+        //     if(temp != open_list_f_sorted.end())
+        //     {
+        //         for(std::multimap<double, planNode*>::iterator itr = temp; itr->first == f_lookup; itr++)
+        //         {
+        //             if(itr->second == input)
+        //             {
+        //                 std::cout << "Found the search iterator!" << std::endl;
+        //                 ret_val = input; 
+        //                 open_list_f_sorted.erase(itr);
+        //                 open_list_loc_sorted.erase(get_hash_key(input));
+        //                 return ret_val;       
+        //             }
+        //         }
+        //         mexPrintf("Failed to find iterator in given f\n");
+        //     }
+        //     else
+        //     {
+        //         mexPrintf("Failed lookup with f value\n");
+        //         std::cout << "Value not found :(  " << std::endl;
+        //         return nullptr;  
+        //     }
+        // }
 
         planNode* get_next_from_open() //pulls the node with the next best f value. 
         {           
-            mexPrintf("Function %s start\n", __FUNCTION__);
-            if(!open_list_f_sorted.empty())
+            // mexPrintf("Function %s start\n", __FUNCTION__);
+            if(!open_list.empty())
             {
-                std::multimap<double,planNode*>::iterator first_itr = open_list_f_sorted.begin();
-                planNode* ret_val = first_itr->second->get_ptr(); //->get_ptr()
-                mexPrintf("pre erase value: %d\n",ret_val->get_dim(0));
-                open_list_f_sorted.erase(first_itr);
-                open_list_loc_sorted.erase(get_hash_key(ret_val));
-                mexPrintf("posg erase value: %d\n",ret_val->get_dim(0));
-
+                planNode* ret_val = open_list.top();
+                open_list.pop();
                 return ret_val;
+
             }
+            // if(!open_list_f_sorted.empty())
+            // {
+            //     std::multimap<double,planNode*>::iterator first_itr = open_list_f_sorted.begin();
+            //     planNode* ret_val = first_itr->second->get_ptr(); //->get_ptr()
+            //     mexPrintf("pre erase value: %d\n",ret_val->get_dim(0));
+            //     open_list_f_sorted.erase(first_itr);
+            //     open_list_loc_sorted.erase(get_hash_key(ret_val));
+            //     mexPrintf("posg erase value: %d\n",ret_val->get_dim(0));
+
+            //     return ret_val;
+            // }
             mexPrintf("open list is empty!");
             return nullptr;
         }
 
         bool open_is_empty()
         {
-             mexPrintf("Function %s start\n", __FUNCTION__);
-           return open_list_loc_sorted.empty();
+        //    mexPrintf("Function %s start\n", __FUNCTION__);
+        //    return open_list_loc_sorted.empty();
+            return open_list.empty();
         }
 
         void add_to_closed(planNode* input)
@@ -324,43 +333,43 @@ class kataPlanner
             return std::sqrt( std::pow(input->get_dim(0)-get_last_x(),2) + std::pow(input->get_dim(1)-get_last_y(),2));
         }
 
-        bool update_cost_existing(planNode* input, double cumulative_cost)
-        {
-            mexPrintf("Function %s start\n", __FUNCTION__);
-            //evaluate if this is a lower cost. 
-            std::map<std::tuple<int, int, int>, planNode*>::iterator iter = open_list_loc_sorted.find(get_hash_key(input));
-            double current_g = iter->second->get_g();
+        // bool update_cost_existing(planNode* input, double cumulative_cost)
+        // {
+        //     // mexPrintf("Function %s start\n", __FUNCTION__);
+        //     //evaluate if this is a lower cost. 
+        //     std::map<std::tuple<int, int, int>, planNode*>::iterator iter = open_list_loc_sorted.find(get_hash_key(input));
+        //     double current_g = iter->second->get_g();
 
-            double new_g = cumulative_cost + iter->second->get_c(); //because C and H shouldn't change based on path
-            if(current_g < new_g ) //already optimal
-            {
-                //do nothing. Dump the input. 
-                // delete input;
-                // input = nullptr;
-                return false;
-            }
-            else //new calculated value is improved. Need to update. 
-            {
-                //removing from f_sorted open list
-                double cur_f = iter->second->get_f();
-                std::multimap<double,planNode*>::iterator del_iter = open_list_f_sorted.find(cur_f);
-                for(std::multimap<double, planNode*>::iterator for_itr = del_iter; for_itr->first == cur_f; for_itr++)
-                {
-                    if(for_itr->second == input)
-                    {
-                        open_list_f_sorted.erase(for_itr); 
-                    }
-                }
-                //----------
+        //     double new_g = cumulative_cost + iter->second->get_c(); //because C and H shouldn't change based on path
+        //     if(current_g < new_g ) //already optimal
+        //     {
+        //         //do nothing. Dump the input. 
+        //         // delete input;
+        //         // input = nullptr;
+        //         return false;
+        //     }
+        //     else //new calculated value is improved. Need to update. 
+        //     {
+        //         //removing from f_sorted open list
+        //         double cur_f = iter->second->get_f();
+        //         std::multimap<double,planNode*>::iterator del_iter = open_list_f_sorted.find(cur_f);
+        //         for(std::multimap<double, planNode*>::iterator for_itr = del_iter; for_itr->first == cur_f; for_itr++)
+        //         {
+        //             if(for_itr->second == input)
+        //             {
+        //                 open_list_f_sorted.erase(for_itr); 
+        //             }
+        //         }
+        //         //----------
 
-                //setting the new g value
-                input->set_g_cumulative(cumulative_cost);
+        //         //setting the new g value
+        //         input->set_g_cumulative(cumulative_cost);
 
-                //reinserting into f_sorted open list
-                open_list_f_sorted.insert(std::pair<double,planNode*>(input->get_f(),input)); 
-                return true;
-            }
-        }
+        //         //reinserting into f_sorted open list
+        //         open_list_f_sorted.insert(std::pair<double,planNode*>(input->get_f(),input)); 
+        //         return true;
+        //     }
+        // }
 
         bool is_goal(planNode* input) //introducing offset here. 
         {
@@ -475,51 +484,51 @@ class kataPlanner
 
         void evaluate_neighbor(planNode* current, int rel_x, int rel_y, int rel_t)
         {
-            mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
-            mexPrintf("Function %s start\n", __FUNCTION__);
+            // mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
+            // mexPrintf("Function %s start\n", __FUNCTION__);
             // int tempx = current->get_coords()[0];
-            mexPrintf("X coordinate in evaluate_neighbor %d \n", current->get_dim(0));
-            mexPrintf("Y coordinate in evaluate_neighbor %d \n", current->get_dim(1));
-            mexPrintf("t coordinate in evaluate_neighbor %d \n", current->get_dim(2));
+            // mexPrintf("X coordinate in evaluate_neighbor %d \n", current->get_dim(0));
+            // mexPrintf("Y coordinate in evaluate_neighbor %d \n", current->get_dim(1));
+            // mexPrintf("t coordinate in evaluate_neighbor %d \n", current->get_dim(2));
             // mexPrintf("size: %d", (current->get_coords()).size());
             // std::vector<int> new_coords = get_coords_from_rel(current->get_dim(0), current->get_dim(1) , current->get_dim(2), rel_x, rel_y, rel_t);
-            mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
+            // mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
 
             // if(valid_coords(new_coords))
             // {
-            mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
+            // mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
             planNode* temp_node = new planNode(current->get_dim(0)+rel_x, current->get_dim(1)+rel_y, current->get_dim(2)+rel_t);
-            mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
+            // mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
             if(!in_closed(temp_node)) //verify that the node is not in the closed list
             {
-                mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
-                if(!in_open(temp_node)) //not already in open, can be added as a new planNode
-                {
-                    mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
+                // mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
+                // if(!in_open(temp_node)) //not already in open, can be added as a new planNode
+                // {
+                    // mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
                     set_costs(temp_node,current->get_g());
-                    mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
+                    // mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
                     temp_node -> set_prev(current);
-                    mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
+                    // mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
                     add_to_open(temp_node);
-                    mexPrintf("Open list after adding to open.");
+                    // mexPrintf("Open list after adding to open.");
                     // print_open();
-                    mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
-                }
-                else //meaning that it is already in open list, with a different g value.
-                {
-                    mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
-                    temp_node -> set_prev(current);
-                    mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
-                    update_cost_existing(temp_node,current->get_g());
-                    mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
-                }
+                    // mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
+            //     }
+            //     else //meaning that it is already in open list, with a different g value.
+            //     {
+            //         // mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
+            //         temp_node -> set_prev(current);
+            //         // mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
+            //         update_cost_existing(temp_node,current->get_g());
+            //         // mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
+            //     }
             }
 
             if(current->is_goal())
             {
-                mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
+                // mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
                 mark_expanded(current); //could probably just check the closed list for goals.
-                mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
+                // mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
                 //Verify that goals are actually populated. !!!!!
             }
             mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
@@ -527,18 +536,18 @@ class kataPlanner
 
         }
 
-        void print_open()
-        {
-            std::multimap<double,planNode*>::iterator del_iter = open_list_f_sorted.begin();
+        // void print_open()
+        // {
+        //     std::multimap<double,planNode*>::iterator del_iter = open_list_f_sorted.begin();
 
-            mexPrintf("F Value \t x \t y \t t \n");
-            for(std::multimap<double, planNode*>::iterator for_itr = open_list_f_sorted.begin(); for_itr != open_list_f_sorted.end(); for_itr++)
-            {
-                mexPrintf("%f \t %d \t %d \t %d \n ",for_itr->second->get_f(), for_itr->second->get_dim(0), for_itr->second->get_dim(1), for_itr->second->get_dim(2));
+        //     mexPrintf("F Value \t x \t y \t t \n");
+        //     for(std::multimap<double, planNode*>::iterator for_itr = open_list_f_sorted.begin(); for_itr != open_list_f_sorted.end(); for_itr++)
+        //     {
+        //         mexPrintf("%f \t %d \t %d \t %d \n ",for_itr->second->get_f(), for_itr->second->get_dim(0), for_itr->second->get_dim(1), for_itr->second->get_dim(2));
 
-            }
-            mexPrintf("\n");
-        }
+        //     }
+        //     mexPrintf("\n");
+        // }
 
         
 };
@@ -617,16 +626,16 @@ class kataPlanner3D : public kataPlanner
             while(!open_is_empty() && goal_not_expanded())  //at this point, the first goal has been reached. But need to validate that it is at the right time
             {
                 planNode* current = get_next_from_open();
-                mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
+                // mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
                 evaluate_neighbors(current->get_ptr());
-                mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
+                // mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
                 add_to_closed(current);
-                mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
+                // mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
 
             }
-            mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
+            // mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
             populate_path(last_found_goal);
-            mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
+            // mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
 
         }
 
