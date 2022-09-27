@@ -66,7 +66,7 @@ class kataPlanner
         int elapsed_time; 
         bool expanded_goal = false; 
         std::vector<int> path; 
-        planNode* last_found_goal;
+        planNode* last_found_goal = new planNode();
         
         // 8-connected grid
         int dX[NUMDIRS] = {-1, -1, -1,  0,  0,  1, 1, 1, 0};
@@ -91,8 +91,8 @@ class kataPlanner
             this -> robotposeY = robotposeY;
             this -> x_size = x_size;
             this -> y_size = y_size;
-            last_x = map[x_size*y_size-2];
-            last_y = map[x_size*y_size-1];
+            last_x = target_traj[target_steps-1];
+            last_y = target_traj[target_steps-2];
  
             start_timer();
 
@@ -366,10 +366,11 @@ class kataPlanner2D : public kataPlanner
 
         bool cur_is_goal(planNode* input) //introducing offset here. 
         {
-            if(target_traj[target_steps-2] ==  input->get_dim(0) &&
-               target_traj[target_steps-1] ==  input->get_dim(1) )
+            if(get_last_x() ==  input->get_dim(0) &&
+               get_last_y() ==  input->get_dim(1) )
                {
                     input->set_is_goal(true);
+                    // last_found_goal = input;
                     return true;
                }
 
@@ -384,6 +385,12 @@ class kataPlanner2D : public kataPlanner
                 if(valid_coords(current->get_dim(0)+dX[i], current->get_dim(1)+dY[i]) && goal_not_expanded() )
                 {
                     evaluate_neighbor(current, dX[i], dY[i]);
+                }
+
+                if(cur_is_goal(current)) 
+                {
+                    mark_expanded(current); 
+                    return;
                 }
             }
         }
@@ -403,23 +410,15 @@ class kataPlanner2D : public kataPlanner
                 add_to_open(temp_node);
             }
 
-            if(cur_is_goal(current)) //never achieves this!
-            {
-                mark_expanded(current); 
-                return;
-                //could probably just check the closed list for goals.
-                // mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
-                //Verify that goals are actually populated. !!!!!
-            }
+            
         }   
        
         void mark_expanded(planNode* goal_input)
         {
-            last_found_goal = goal_input;
+            last_found_goal = goal_input->get_ptr();
             expanded_goal = true;
             goal_input->set_is_goal(true);
-            goal_input->get_prev_ptr();
-            mexPrintf("Goal found!\n");
+            mexPrintf("Goal found! (%d, %d)\n", goal_input->get_dim(0), goal_input->get_dim(1));
         }
 
         void generate_path()
@@ -457,7 +456,7 @@ class kataPlanner2D : public kataPlanner
 
         void populate_path(planNode* goal)
         {
-            mexPrintf("Populating path.\n");
+            mexPrintf("Populating path. x: %d, y: %d\n", goal->get_dim(0),goal->get_dim(1));
             planNode* current = new planNode();
             current = goal;
             planNode* prev = new planNode();
@@ -471,9 +470,12 @@ class kataPlanner2D : public kataPlanner
                 current = prev;
                 prev = current->get_prev_ptr();
             } 
+            path.insert(path.begin(), current -> get_dim(1)); 
+            path.insert(path.begin(), current -> get_dim(0));
+
             mexPrintf("Population complete \n");
 
-            mexPrintf("Final target location\n x: %d y: %d",get_last_x(),get_last_y());
+            mexPrintf("\nFinal target location\nx: %d y: %d\n\n", get_last_x(),get_last_y());
             for(int i = 0; i < path.size(); i = i+2)
             {
                 mexPrintf("x: %d, y: %d \n", path[i], path[i+1]);
@@ -483,25 +485,29 @@ class kataPlanner2D : public kataPlanner
 
         int get_x_dir(int t_step)
         {
-            if(t_step < path.size())
+            if(2*t_step < path.size())
             {
+                // mexPrintf("x: %d", path[2*t_step]);
                 return path[2*t_step];
             }
             else
             {
-                return 0;
+                // mexPrintf("x: %d", path[path.size()-2]);
+                return path[path.size()-2];
             }
         }
 
         int get_y_dir(int t_step)
         {
-            if(t_step < path.size())
+            if(2*t_step < path.size())
             {
+                // mexPrintf("y: %d", path[(2*t_step) + 1]);
                 return path[(2*t_step) + 1];
             }
             else
             {
-                return 0;
+                // mexPrintf("y: %d", path[path.size()-1]);
+                return path[path.size()-1];
             }
         }
 

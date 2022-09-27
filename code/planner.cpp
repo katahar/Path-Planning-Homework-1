@@ -69,94 +69,29 @@ static void planner(
 {
     //NOTE: Robot and target positions must be corrected due to difference in indexing
     if(!first_run_complete)
-    {
-        // mexPrintf("About to run constructor\n");
-
-        // mexPrintf("x_size: %i \n", x_size);
-        // mexPrintf("y_size: %i \n", y_size);
-        // mexPrintf("target_steps: %i \n", target_steps);
-        // mexPrintf("collision_thresh: %i \n", collision_thresh);
-        // mexPrintf("robotposeXcorrected: %i \n", robotposeXcorrected);
-        // mexPrintf("robotposeYcorrected: %i \n", robotposeYcorrected);
-        
-        
-
-        // planner_3d = kataPlanner3D(map, x_size, y_size, target_steps, target_traj, collision_thresh, robotposeXcorrected, robotposeYcorrected);
-        // mexPrintf("Constructotr done\n");
-        
+    {        
         int robotposeXcorrected = robotposeX - 1;
         int robotposeYcorrected = robotposeY - 1;
         int targetposeXcorrected = targetposeX - 1;
         int targetposeYcorrected = targetposeY - 1;
-        mexPrintf("Initial Pose \n X: %d, Y: %d \n", robotposeXcorrected, robotposeYcorrected);
+        mexPrintf("Initial Pose \n X: %d, Y: %d\n", robotposeXcorrected, robotposeYcorrected);
         planner_2d = kataPlanner2D(map, x_size, y_size, target_steps, target_traj, collision_thresh, robotposeXcorrected, robotposeYcorrected);
-        mexPrintf("2d Constructotr done\n");
 
         planner_2d.generate_path();
         first_run_complete = true;
         mexPrintf("First run complete. \n");
+        action_ptr[0] = robotposeX;
+        action_ptr[1] = robotposeY;
+        
     }
     else
     {
-        action_ptr[0] = planner_2d.get_x_dir(time_count);
-        action_ptr[1] =  planner_2d.get_y_dir(time_count);
+        action_ptr[0] = planner_2d.get_x_dir(time_count)+1;
+        action_ptr[1] = planner_2d.get_y_dir(time_count)+1;
         time_count++;
+        mexPrintf("%d %d \n", action_ptr[0], action_ptr[1]);
     }
 
-    //===================================================
-    
-    // int int_val = 9;
-    // double dub_val = 9.1;
-    // mexPrintf("%i \n", int_val);
-    // mexPrintf("%g \n", dub_val);
-
-    // mexPrintf("Line Number %s->%s:%d\n", __FILE__, __FUNCTION__, __LINE__);
-
-    // mexPrintf("%g \n", map[GETMAPINDEXZEROED(i,j,x_size,y_size)]);
-    // mexPrintf("x_size: %i, y_size: %i\n", x_size, y_size); 
-
-
-
-    //===================================================
-
-    // // 8-connected grid
-    // int dX[NUMOFDIRS] = {-1, -1, -1,  0,  0,  1, 1, 1};
-    // int dY[NUMOFDIRS] = {-1,  0,  1, -1,  1, -1, 0, 1};
-    
-    // // for now greedily move towards the final target position,
-    // // but this is where you can put your planner
-
-    // int goalposeX = (int) target_traj[target_steps-1];
-    // int goalposeY = (int) target_traj[target_steps-1+target_steps];
-    // // printf("robot: %d %d;\n", robotposeX, robotposeY);
-    // // printf("goal: %d %d;\n", goalposeX, goalposeY);
-
-    // int bestX = 0, bestY = 0; // robot will not move if greedy action leads to collision
-    // double olddisttotarget = (double)sqrt(((robotposeX-goalposeX)*(robotposeX-goalposeX) + (robotposeY-goalposeY)*(robotposeY-goalposeY)));
-    // double disttotarget;
-    // for(int dir = 0; dir < NUMOFDIRS; dir++)
-    // {
-    //     int newx = robotposeX + dX[dir];
-    //     int newy = robotposeY + dY[dir];
-    //     if (newx >= 1 && newx <= x_size && newy >= 1 && newy <= y_size)
-    //     {
-    //         if (((int)map[GETMAPINDEX(newx,newy,x_size,y_size)] >= 0) && ((int)map[GETMAPINDEX(newx,newy,x_size,y_size)] < collision_thresh))  //if free
-    //         {
-    //             disttotarget = (double)sqrt(((newx-goalposeX)*(newx-goalposeX) + (newy-goalposeY)*(newy-goalposeY)));
-    //             if(disttotarget < olddisttotarget)
-    //             {
-    //                 olddisttotarget = disttotarget;
-    //                 bestX = dX[dir];
-    //                 bestY = dY[dir];
-    //             }
-    //         }
-    //     }
-    // }
-    // robotposeX = robotposeX + bestX;
-    // robotposeY = robotposeY + bestY;
-    // action_ptr[0] = robotposeX;
-    // action_ptr[1] = robotposeY;
-    
     return;
 }
 
