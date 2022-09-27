@@ -65,9 +65,9 @@ class planNode
 
         planNode(int x, int y)
         {
-            mexPrintf("~~~~~~Inside planNode constructor 2D\n");
-            mexPrintf("~X coordinate: %d \n", x);
-            mexPrintf("~y coordinate: %d \n", y);
+            // mexPrintf("~~~~~~Inside planNode constructor 2D\n");
+            // mexPrintf("~X coordinate: %d \n", x);
+            // mexPrintf("~y coordinate: %d \n", y);
             // this -> coordinates.push_back(x);
             // this -> coordinates.push_back(y);
             // this -> num_dims = this->coordinates.size();
@@ -157,6 +157,11 @@ class planNode
         {
             // this->collision_thresh = thresh_in;
             collision_thresh = thresh_in;
+        }
+
+        void set_is_start()
+        {
+            is_start = true;
         }
 
         void set_is_goal(bool input)

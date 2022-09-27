@@ -47,7 +47,9 @@
 #define NUMOFDIRS 8
 
 bool first_run_complete = false; 
-kataPlanner3D planner_3d;
+// kataPlanner3D planner_3d;
+kataPlanner2D planner_2d;
+
 int time_count = 0; 
 
 static void planner(
@@ -84,10 +86,13 @@ static void planner(
         
         
 
-        planner_3d = kataPlanner3D(map, x_size, y_size, target_steps, target_traj, collision_thresh, robotposeXcorrected, robotposeYcorrected);
-        mexPrintf("Constructotr done\n");
+        // planner_3d = kataPlanner3D(map, x_size, y_size, target_steps, target_traj, collision_thresh, robotposeXcorrected, robotposeYcorrected);
+        // mexPrintf("Constructotr done\n");
 
-        planner_3d.generate_path();
+        planner_2d = kataPlanner2D(map, x_size, y_size, target_steps, target_traj, collision_thresh, robotposeXcorrected, robotposeYcorrected);
+        mexPrintf("2d Constructotr done\n");
+
+        planner_2d.generate_path();
         first_run_complete = true;
         mexPrintf("First run complete. \n");
 
