@@ -68,11 +68,6 @@ static void planner(
         )
 {
     //NOTE: Robot and target positions must be corrected due to difference in indexing
-    int robotposeXcorrected = robotposeX - 1;
-    int robotposeYcorrected = robotposeY - 1;
-    int targetposeXcorrected = targetposeX - 1;
-    int targetposeYcorrected = targetposeY - 1;
-
     if(!first_run_complete)
     {
         // mexPrintf("About to run constructor\n");
@@ -88,20 +83,24 @@ static void planner(
 
         // planner_3d = kataPlanner3D(map, x_size, y_size, target_steps, target_traj, collision_thresh, robotposeXcorrected, robotposeYcorrected);
         // mexPrintf("Constructotr done\n");
-
+        
+        int robotposeXcorrected = robotposeX - 1;
+        int robotposeYcorrected = robotposeY - 1;
+        int targetposeXcorrected = targetposeX - 1;
+        int targetposeYcorrected = targetposeY - 1;
+        mexPrintf("Initial Pose \n X: %d, Y: %d \n", robotposeXcorrected, robotposeYcorrected);
         planner_2d = kataPlanner2D(map, x_size, y_size, target_steps, target_traj, collision_thresh, robotposeXcorrected, robotposeYcorrected);
         mexPrintf("2d Constructotr done\n");
 
         planner_2d.generate_path();
         first_run_complete = true;
         mexPrintf("First run complete. \n");
-
     }
     else
     {
-        // mexPrintf("in subsequent runs\n");
-        // action_ptr[0] = planner_3d.get_x_dir(time_count);
-        // action_ptr[1] = planner_3d.get_y_dir(time_count);
+        action_ptr[0] = planner_2d.get_x_dir(time_count);
+        action_ptr[1] =  planner_2d.get_y_dir(time_count);
+        time_count++;
     }
 
     //===================================================
@@ -139,7 +138,6 @@ static void planner(
     // {
     //     int newx = robotposeX + dX[dir];
     //     int newy = robotposeY + dY[dir];
-
     //     if (newx >= 1 && newx <= x_size && newy >= 1 && newy <= y_size)
     //     {
     //         if (((int)map[GETMAPINDEX(newx,newy,x_size,y_size)] >= 0) && ((int)map[GETMAPINDEX(newx,newy,x_size,y_size)] < collision_thresh))  //if free
@@ -156,8 +154,8 @@ static void planner(
     // }
     // robotposeX = robotposeX + bestX;
     // robotposeY = robotposeY + bestY;
-    action_ptr[0] = robotposeX;
-    action_ptr[1] = robotposeY;
+    // action_ptr[0] = robotposeX;
+    // action_ptr[1] = robotposeY;
     
     return;
 }

@@ -76,8 +76,6 @@ class kataPlanner
         
     public: 
 
-
-
         kataPlanner()
         {
             // mexPrintf("Function %s start\n", __FUNCTION__);
@@ -178,18 +176,6 @@ class kataPlanner
             return int(std::sqrt( std::pow(input->get_dim(0)-get_last_x(),2) + std::pow(input->get_dim(1)-get_last_y(),2)));
         }
 
-        bool is_goal(planNode* input) //introducing offset here. 
-        {
-            int elapsed = cumulative_time();
-            if(target_traj[2*(input->get_dim(2))] ==  input->get_dim(0) &&
-               target_traj[2*(input->get_dim(2))+1] ==  input->get_dim(1) )
-               {
-                    input->set_is_goal(true);
-                    return true;
-               }
-            return false;
-        }
-
         void start_timer()
         {
             startTime = std::chrono::system_clock::now();
@@ -233,10 +219,6 @@ class kataPlanner
             return false; 
         }
 
-
-        
-
-
 };
 
 
@@ -269,6 +251,18 @@ class kataPlanner3D : public kataPlanner
                     evaluate_neighbor(current, dX[i], dY[i], 1);
                 }
             }
+        }
+       
+        bool cur_is_goal(planNode* input) //introducing offset here. 
+        {
+            int elapsed = cumulative_time();
+            if(target_traj[2*(input->get_dim(2))] ==  input->get_dim(0) &&
+               target_traj[2*(input->get_dim(2))+1] ==  input->get_dim(1) )
+               {
+                    input->set_is_goal(true);
+                    return true;
+               }
+            return false;
         }
 
         void generate_heuristic()
@@ -314,9 +308,7 @@ class kataPlanner3D : public kataPlanner
             last_found_goal = goal_input;
             expanded_goal = true;
             goal_input->set_is_goal(true);
-            mexPrintf("About to get prev pointer");
             goal_input->get_prev_ptr();
-            mexPrintf("Got prev pointer");
         }
 
         int get_x_dir(int t_step)
@@ -339,7 +331,7 @@ class kataPlanner3D : public kataPlanner
                 add_to_open(temp_node);
             }
 
-            if(current->is_goal())
+            if(cur_is_goal(current))
             {
                 mark_expanded(current); //could probably just check the closed list for goals.
                 // mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
@@ -372,11 +364,24 @@ class kataPlanner2D : public kataPlanner
 
         }
 
+        bool cur_is_goal(planNode* input) //introducing offset here. 
+        {
+            if(target_traj[target_steps-2] ==  input->get_dim(0) &&
+               target_traj[target_steps-1] ==  input->get_dim(1) )
+               {
+                    input->set_is_goal(true);
+                    return true;
+               }
+
+            return false;
+        }
+
+
         void evaluate_neighbors(planNode* current)
         {
             for(int i = 0; i < NUMDIRS; ++i)
             {
-                if(valid_coords(current->get_dim(0)+dX[i], current->get_dim(1)+dY[i]))
+                if(valid_coords(current->get_dim(0)+dX[i], current->get_dim(1)+dY[i]) && goal_not_expanded() )
                 {
                     evaluate_neighbor(current, dX[i], dY[i]);
                 }
@@ -390,7 +395,7 @@ class kataPlanner2D : public kataPlanner
 
         void evaluate_neighbor(planNode* current, int rel_x, int rel_y)
         {
-            if(!in_closed(std::make_tuple(current->get_dim(0),current->get_dim(1)))) //verify that the node is not in the closed list
+            if(!in_closed(std::make_tuple(current->get_dim(0)+rel_x,current->get_dim(1)+rel_y))) //verify that the neighbor is not already in the closed list
             {
                 planNode* temp_node = new planNode(current->get_dim(0)+rel_x, current->get_dim(1)+rel_y);
                 set_costs(temp_node,current->get_g());
@@ -398,25 +403,23 @@ class kataPlanner2D : public kataPlanner
                 add_to_open(temp_node);
             }
 
-            if(current->is_goal()) //never achieves this 
+            if(cur_is_goal(current)) //never achieves this!
             {
                 mark_expanded(current); 
-                mexPrintf("Marking expanded goal");
+                return;
                 //could probably just check the closed list for goals.
                 // mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
                 //Verify that goals are actually populated. !!!!!
             }
-        }
-       
+        }   
        
         void mark_expanded(planNode* goal_input)
         {
             last_found_goal = goal_input;
             expanded_goal = true;
             goal_input->set_is_goal(true);
-            mexPrintf("About to get prev pointer");
             goal_input->get_prev_ptr();
-            mexPrintf("Got prev pointer");
+            mexPrintf("Goal found!\n");
         }
 
         void generate_path()
@@ -425,55 +428,81 @@ class kataPlanner2D : public kataPlanner
             start->set_is_start();
             add_to_open(start);
 
-
-            while(!open_is_empty() && goal_not_expanded())  //at this point, the first goal has been reached. But need to validate that it is at the right time
+            while(!open_is_empty() && goal_not_expanded())  
             {
                 planNode* current = new planNode();
                 current = get_next_from_open();
-                evaluate_neighbors(current);
-                add_to_closed(current);
+                if(!in_closed(std::make_tuple(current->get_dim(0),current->get_dim(1)))) //current is in closed, so already evaluated. 
+                {
+                    evaluate_neighbors(current);
+                    add_to_closed(current);
+                }
+                else
+                {
+                    delete current; //memory management
+                }
             }
-            populate_path(last_found_goal);
 
+            if(open_is_empty())
+            {
+                mexPrintf("empty. \n");
+            }
+            if(goal_not_expanded())
+            {
+                mexPrintf("goal not expanded. \n");
+            }
+            //at this point, the first goal has been reached. But need to validate that it is at the right time
+            populate_path(last_found_goal);
         }
 
         void populate_path(planNode* goal)
         {
             mexPrintf("Populating path.\n");
             planNode* current = new planNode();
-            current = goal; 
-            mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
+            current = goal;
             planNode* prev = new planNode();
             prev = goal->get_prev_ptr();
-            mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
             int count = 0; 
-            mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
 
             while(!(prev->get_is_start()))
             {
-                mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
-                path.insert(path.begin(), (current->get_dim(1) - prev->get_dim(1))); //puts at the beginning. 
-                mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
-                path.insert(path.begin(), (current->get_dim(0) - prev->get_dim(0)));
-                mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
+                path.insert(path.begin(), current->get_dim(1));//(-current->get_dim(1) + prev->get_dim(1))); //puts at the beginning. 
+                path.insert(path.begin(), current->get_dim(0));//(-current->get_dim(0) + prev->get_dim(0)));
                 current = prev;
-                mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
                 prev = current->get_prev_ptr();
-                mexPrintf("Line Number %s:%d\n", __FUNCTION__, __LINE__);
-                mexPrintf("%d\n",count);
-                count++;
             } 
             mexPrintf("Population complete \n");
+
+            mexPrintf("Final target location\n x: %d y: %d",get_last_x(),get_last_y());
+            for(int i = 0; i < path.size(); i = i+2)
+            {
+                mexPrintf("x: %d, y: %d \n", path[i], path[i+1]);
+            }
+
         }
 
         int get_x_dir(int t_step)
         {
-            return path[2*t_step];
+            if(t_step < path.size())
+            {
+                return path[2*t_step];
+            }
+            else
+            {
+                return 0;
+            }
         }
 
         int get_y_dir(int t_step)
         {
-            return path[(2*t_step) + 1];
+            if(t_step < path.size())
+            {
+                return path[(2*t_step) + 1];
+            }
+            else
+            {
+                return 0;
+            }
         }
 
         void add_to_closed(planNode* input)

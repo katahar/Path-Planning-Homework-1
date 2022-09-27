@@ -58,7 +58,7 @@ class planNode
             // mexPrintf("~~~~~~Inside planNode constructor 3D\n");
             // mexPrintf("~X coordinate: %d \n", x_coord);
             // mexPrintf("~y coordinate: %d \n", y_coord);
-            mexPrintf("~t coordinate: %d \n", t_coord);
+            // mexPrintf("~t coordinate: %d \n", t_coord);
 
             num_dims = 3; 
         }
@@ -76,6 +76,7 @@ class planNode
             // this -> y_coord = y;
             // this -> num_dims = 2;
 
+            // mexPrintf("X:  %d  Y: %d\n",x, y);
             x_coord = x;
             y_coord = y;
             num_dims = 2; 
