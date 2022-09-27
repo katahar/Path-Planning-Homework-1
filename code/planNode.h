@@ -23,6 +23,11 @@ class planNode
         int t_coord = -17;
 
     public:
+
+        planNode()
+        {
+            //nothing.
+        }
         // planNode(std::vector<int> input_coords)
         // {
         //     mexPrintf("~~~~~~Inside planNode constructor\n");
