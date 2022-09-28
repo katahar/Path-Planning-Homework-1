@@ -65,18 +65,6 @@ class planNode
 
         planNode(int x, int y)
         {
-            // mexPrintf("~~~~~~Inside planNode constructor 2D\n");
-            // mexPrintf("~X coordinate: %d \n", x);
-            // mexPrintf("~y coordinate: %d \n", y);
-            // this -> coordinates.push_back(x);
-            // this -> coordinates.push_back(y);
-            // this -> num_dims = this->coordinates.size();
-            
-            // this -> x_coord = x;
-            // this -> y_coord = y;
-            // this -> num_dims = 2;
-
-            // mexPrintf("X:  %d  Y: %d\n",x, y);
             x_coord = x;
             y_coord = y;
             num_dims = 2; 
@@ -141,9 +129,9 @@ class planNode
 
         void set_c(int c_in)
         {
-            // this -> c = c_in;
             c = c_in;
         }
+        
         bool set_c(int c_in, int collision_thresh)
         {
             set_c(c_in);

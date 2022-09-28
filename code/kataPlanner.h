@@ -92,7 +92,7 @@ class kataPlanner
             this -> x_size = x_size;
             this -> y_size = y_size;
             last_x = target_traj[target_steps-1];
-            last_y = target_traj[target_steps-2];
+            last_y = target_traj[target_steps-1 + target_steps];
  
             start_timer();
 
@@ -142,7 +142,6 @@ class kataPlanner
             return false; 
         }
 
-
         void add_to_open(planNode* input)
         {
             open_list.push(input);
@@ -161,13 +160,12 @@ class kataPlanner
             return open_list.empty();
         }
     
-
         void set_costs(planNode* neighbor, int cumulative_cost)
         {
-            if(!(neighbor-> set_c(map[get_map_ind(neighbor->get_dim(0),neighbor->get_dim(1))], collision_thresh))); //true if obstacle
+            if(!(neighbor-> set_c(map[get_map_ind(neighbor->get_dim(0), neighbor->get_dim(1))], collision_thresh))); //set_c returns true if obstacle
             {
                 neighbor->set_g_cumulative(cumulative_cost); //node adds cost to the provided cumulative cost. 
-                neighbor->set_h(end_heuristic(neighbor)); //@TODO: add in heuristics.  
+                neighbor->set_h(1*end_heuristic(neighbor)); //@TODO: add in heuristics.  
             }
         }
 
@@ -351,6 +349,7 @@ class kataPlanner2D : public kataPlanner
     public:
         #define axes 2 
         // double*	heuristic_map;
+        std::unordered_map<std::tuple<int, int>,double,tuple_hash_function2D> open_g_track;
 
         kataPlanner2D()
         :kataPlanner()
@@ -370,7 +369,6 @@ class kataPlanner2D : public kataPlanner
                get_last_y() ==  input->get_dim(1) )
                {
                     input->set_is_goal(true);
-                    // last_found_goal = input;
                     return true;
                }
 
@@ -404,13 +402,11 @@ class kataPlanner2D : public kataPlanner
         {
             if(!in_closed(std::make_tuple(current->get_dim(0)+rel_x,current->get_dim(1)+rel_y))) //verify that the neighbor is not already in the closed list
             {
-                planNode* temp_node = new planNode(current->get_dim(0)+rel_x, current->get_dim(1)+rel_y);
-                set_costs(temp_node,current->get_g());
-                temp_node -> set_prev(current);
-                add_to_open(temp_node);
+                planNode* neighbor = new planNode(current->get_dim(0)+rel_x, current->get_dim(1)+rel_y);
+                set_costs(neighbor, current->get_g());
+                neighbor -> set_prev(current);
+                add_to_open(neighbor);
             }
-
-            
         }   
        
         void mark_expanded(planNode* goal_input)
@@ -456,7 +452,7 @@ class kataPlanner2D : public kataPlanner
 
         void populate_path(planNode* goal)
         {
-            mexPrintf("Populating path. x: %d, y: %d\n", goal->get_dim(0),goal->get_dim(1));
+            mexPrintf("Populating path."); // x: %d, y: %d\n", goal->get_dim(0),goal->get_dim(1));
             planNode* current = new planNode();
             current = goal;
             planNode* prev = new planNode();
@@ -480,7 +476,6 @@ class kataPlanner2D : public kataPlanner
             {
                 mexPrintf("x: %d, y: %d \n", path[i], path[i+1]);
             }
-
         }
 
         int get_x_dir(int t_step)

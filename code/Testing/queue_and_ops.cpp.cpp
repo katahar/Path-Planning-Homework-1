@@ -90,6 +90,8 @@ main()
     pq.push(instD);
     pq.push(instE);
     pq.push(instF);
+    pq.push(instF);
+    pq.push(instF);
     showpq(pq);
 
 
@@ -104,6 +106,9 @@ main()
     instA.evaluation_metric = -2;
     std::cout << "Accessing object via queue" << std::endl;
     map_vec_ptrs[0][1][1]->print();
+
+
+    showpq(pq);
 
 
 }   
