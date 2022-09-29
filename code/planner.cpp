@@ -33,8 +33,6 @@
 //access to the map is shifted to account for 0-based indexing in the map, whereas
 //1-based indexing in matlab (so, robotpose and goalpose are 1-indexed)
 #define GETMAPINDEX(X, Y, XSIZE, YSIZE) ((Y-1)*XSIZE + (X-1))
-#define GETMAPINDEXZEROED(X, Y, XSIZE, YSIZE) ((Y)*XSIZE + (X))
-
 
 #if !defined(MAX)
 #define	MAX(A, B)	((A) > (B) ? (A) : (B))
@@ -70,24 +68,22 @@ static void planner(
     //NOTE: Robot and target positions must be corrected due to difference in indexing
     if(!first_run_complete)
     {        
-        int robotposeXcorrected = robotposeX - 1;
-        int robotposeYcorrected = robotposeY - 1;
-        int targetposeXcorrected = targetposeX - 1;
-        int targetposeYcorrected = targetposeY - 1;
-        mexPrintf("\nInitial Pose \n X: %d, Y: %d\n", robotposeXcorrected, robotposeYcorrected);
+        int robotposeXcorrected = robotposeX;
+        int robotposeYcorrected = robotposeY;
+        // mexPrintf("\nInitial Pose \n X: %d, Y: %d\n", robotposeXcorrected, robotposeYcorrected);
         planner_2d = kataPlanner2D(map, x_size, y_size, target_steps, target_traj, collision_thresh, robotposeXcorrected, robotposeYcorrected);
 
         planner_2d.generate_path();
         first_run_complete = true;
-        mexPrintf("First run complete. \n");
+        mexPrintf("Planning complete. \n");
         action_ptr[0] = robotposeX;
         action_ptr[1] = robotposeY;
         
     }
     else
     {
-        action_ptr[0] = planner_2d.get_x_dir(time_count);
-        action_ptr[1] = planner_2d.get_y_dir(time_count);
+        action_ptr[0] = planner_2d.get_x_dir(time_count)+1;
+        action_ptr[1] = planner_2d.get_y_dir(time_count)+1;
         // mexPrintf("action pointer: \n X: %d, Y: %d\n", action_ptr[0],action_ptr[1]);
         time_count++;
     }
