@@ -6,10 +6,10 @@ class planNode
 {
     private:
         // std::vector<int> coordinates;
-        int f = std::numeric_limits<double>::max();
-        int g = std::numeric_limits<double>::max();
-        int h = 0.0;
-        int c = 0.0;
+        int f = 0;
+        int g = 0;
+        int h = 0;
+        int c = 0;
         // int prev_t;
         bool flag_is_goal = false; 
         bool is_obstacle = false; 
@@ -52,9 +52,9 @@ class planNode
             // this -> y_coord = y;
             // this -> t_coord = t;
             // this -> num_dims = 3; 
-            x_coord = x;
-            y_coord = y;
-            t_coord = t;
+            this -> x_coord = x;
+            this -> y_coord = y;
+            this -> t_coord = t;
             // mexPrintf("~~~~~~Inside planNode constructor 3D\n");
             // mexPrintf("~X coordinate: %d \n", x_coord);
             // mexPrintf("~y coordinate: %d \n", y_coord);
@@ -65,9 +65,9 @@ class planNode
 
         planNode(int x, int y)
         {
-            x_coord = x;
-            y_coord = y;
-            num_dims = 2; 
+            this -> x_coord = x;
+            this -> y_coord = y;
+            this -> num_dims = 2; 
         }
 
         // planNode(std::vector<int> input_coords, double c, double collision_thresh)
@@ -90,33 +90,33 @@ class planNode
         void update_f()
         {
             // this->f = this->g + this->h;
-            f = g + h;
+            this -> f = this -> g + this -> h;
         }
         void set_g(int g_in)
         {
             // this->g = round(g_in);
             // this->update_f();
-            g = g_in;
+            this -> g = g_in;
             update_f();
         }
         void set_g_cumulative(int cumulative_cost) //assumes that cost for this node has already been assigned, will automatically add to given g
         {
             // this->g = round(cumulative_cost) + this->c;
             // this->update_f();
-            g = cumulative_cost + c;
+            this -> g = cumulative_cost + c;
             update_f();
         }        
         void set_h(int h_in)
         {
             // this->h = round(h_in);
             // this->update_f();
-            h = h_in;
+            this -> h = h_in;
             update_f();
         }
         void set_prev(planNode* prev)
         {
             // this -> prevPos = prev;
-            prevPos = prev;
+            this -> prevPos = prev;
         }
         
         // void set_coord(std::vector<int> coordinate_inputs, int num_dimensions)
@@ -129,55 +129,55 @@ class planNode
 
         void set_c(int c_in)
         {
-            c = c_in;
+            this -> c = c_in;
         }
-        
+
         bool set_c(int c_in, int collision_thresh)
         {
             set_c(c_in);
             if(c_in >= collision_thresh)
             {
-                is_obstacle = true;
+                this -> is_obstacle = true;
             }
-            return is_obstacle;
+            return this -> is_obstacle;
         }
 
         void set_collision_thresh(int thresh_in)
         {
             // this->collision_thresh = thresh_in;
-            collision_thresh = thresh_in;
+            this -> collision_thresh = thresh_in;
         }
 
         void set_is_start()
         {
-            is_start = true;
+            this -> is_start = true;
         }
 
         void set_is_goal(bool input)
         {
             // this -> flag_is_goal = input;
-            flag_is_goal = input;
+            this -> flag_is_goal = input;
         }
 
         int get_g()
         {
             // return this->g;
-            return g;
+            return this -> g;
         }
         int get_f()
         {
             // return this->f;
-            return f;
+            return this -> f;
         }
         int get_h()
         {
             // return this->h;
-            return h;
+            return this -> h;
         }
         int get_c()
         {
             // return this->c;
-            return c;
+            return this -> c;
         }
         int get_dim(int axis)
         {
@@ -197,19 +197,19 @@ class planNode
             switch(axis)
             {
                 case 0: 
-                    return  x_coord;
+                    return  this -> x_coord;
                     break;
                 case 1: 
-                    return  y_coord;
+                    return  this -> y_coord;
                     break;
                 case 2: 
-                    return  t_coord;
+                    return  this -> t_coord;
                     break;
             }
         }
         bool get_is_start()
         {
-            return is_start; 
+            return this -> is_start; 
         }
         
 
@@ -224,7 +224,7 @@ class planNode
 
         planNode* get_prev_ptr()
         {
-            return prevPos;
+            return this -> prevPos;
         }
         planNode* get_ptr()
         {
@@ -233,7 +233,7 @@ class planNode
 
         bool is_goal()
         {
-            return flag_is_goal;
+            return this -> flag_is_goal;
         }
 
         friend bool operator<(const planNode& l, const planNode& r)
