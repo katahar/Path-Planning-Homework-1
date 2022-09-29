@@ -86,8 +86,8 @@ static void planner(
     }
     else
     {
-        action_ptr[0] = planner_2d.get_x_dir(time_count)+1;
-        action_ptr[1] = planner_2d.get_y_dir(time_count)+1;
+        action_ptr[0] = planner_2d.get_x_dir(time_count);
+        action_ptr[1] = planner_2d.get_y_dir(time_count);
         // mexPrintf("action pointer: \n X: %d, Y: %d\n", action_ptr[0],action_ptr[1]);
         time_count++;
     }
