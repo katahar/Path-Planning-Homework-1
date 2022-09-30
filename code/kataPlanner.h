@@ -113,7 +113,6 @@ class kataPlanner
             start_timer();
         } 
 
-
         int get_map_ind(int x_ind, int y_ind)
         {
             return y_ind*x_size + x_ind;
@@ -174,6 +173,43 @@ class kataPlanner
             return !expanded_goal;
         }
 
+        void print_path()
+        {
+            mexPrintf("\nFinal target location\nx: %d y: %d\n\n", get_last_x(),get_last_y());
+            for(int i = 0; i < path.size(); i = i+2)
+            {
+                mexPrintf("x: %d, y: %d \n", path[i], path[i+1]);
+            }
+        }
+        
+        int get_x_dir(int t_step)
+        {
+            if(2*t_step < path.size())
+            {
+                // mexPrintf("x: %d", path[2*t_step]);
+                return path[2*t_step];
+            }
+            else
+            {
+                // mexPrintf("x: %d", path[path.size()-2]);
+                return path[path.size()-2];
+            }
+        }
+
+        int get_y_dir(int t_step)
+        {
+            if(2*t_step < path.size())
+            {
+                // mexPrintf("y: %d", path[(2*t_step) + 1]);
+                return path[(2*t_step) + 1];
+            }
+            else
+            {
+                // mexPrintf("y: %d", path[path.size()-1]);
+                return path[path.size()-1];
+            }
+        }
+
         //@TODO: split these into their individual child classes VV
 
         bool valid_coords(int x1, int y1)
@@ -213,43 +249,6 @@ class kataPlanner
             return false; 
         }
 
-        void print_path()
-        {
-            mexPrintf("\nFinal target location\nx: %d y: %d\n\n", get_last_x(),get_last_y());
-            for(int i = 0; i < path.size(); i = i+2)
-            {
-                mexPrintf("x: %d, y: %d \n", path[i], path[i+1]);
-            }
-        }
-        
-        int get_x_dir(int t_step)
-        {
-            if(2*t_step < path.size())
-            {
-                // mexPrintf("x: %d", path[2*t_step]);
-                return path[2*t_step];
-            }
-            else
-            {
-                // mexPrintf("x: %d", path[path.size()-2]);
-                return path[path.size()-2];
-            }
-        }
-
-        int get_y_dir(int t_step)
-        {
-            if(2*t_step < path.size())
-            {
-                // mexPrintf("y: %d", path[(2*t_step) + 1]);
-                return path[(2*t_step) + 1];
-            }
-            else
-            {
-                // mexPrintf("y: %d", path[path.size()-1]);
-                return path[path.size()-1];
-            }
-        }
-
 
 };
 
@@ -261,7 +260,7 @@ class kataPlanner3D : public kataPlanner
         double*	heuristic_map;
         int last_goal_t_step = -1;
         std::unordered_map<std::tuple<int, int, int>,double,tuple_hash_function> open_g_track;
-
+        // kataPlanner2D heuristic;
 
         kataPlanner3D()
         :kataPlanner()
@@ -272,7 +271,7 @@ class kataPlanner3D : public kataPlanner
         kataPlanner3D(double* map_in, int x_size, int y_size, int target_steps, double* target_traj, int col_thresh, int robotposeX, int robotposeY)
         :kataPlanner(map_in, x_size, y_size, target_steps, target_traj, col_thresh, robotposeX, robotposeY)
         {
-
+            // heuristic = kataPlanner2D(map_in, x_size, y_size, target_steps, target_traj, col_thresh, robotposeX, robotposeY);
         }
 
         void evaluate_neighbors(planNode* current)
@@ -470,6 +469,7 @@ class kataPlanner2D : public kataPlanner
         #define axes 2 
         // double*	heuristic_map;
         std::unordered_map<std::tuple<int, int>,int,tuple_hash_function2D> open_g_track;
+        std::unordered_map<std::tuple<int, int>,int,tuple_hash_function2D> heuristic_map;
 
         kataPlanner2D()
         :kataPlanner()
@@ -676,4 +676,118 @@ class kataPlanner2D : public kataPlanner
             std::tuple<int, int> temp_tuple = std::make_tuple(input->get_dim(0),input->get_dim(1));
             closed_list2D.insert(temp_tuple);
         }
+
+        // ==================================== Heuristic Functions ====================================================
+        void evaluate_neighbor_no_heuristic(planNode* current, int rel_x, int rel_y)
+        {
+            if(!in_closed(std::make_tuple(current->get_dim(0)+rel_x,current->get_dim(1)+rel_y))) //verify that the neighbor is not already in the closed list
+            {
+                planNode* neighbor = new planNode(current->get_dim(0) + rel_x, current->get_dim(1) + rel_y);
+                if(!(set_costs_no_heuristic(neighbor, current->get_g())))//returns true if neighbor has a better g value than the one currently in the open list. 
+                {
+                    neighbor -> set_prev(current);
+                    add_to_open(neighbor);
+                }
+                else
+                {
+                    delete neighbor;
+                }
+
+            }
+        }   
+
+        void evaluate_neighbors_no_heuristic(planNode* current)
+        {
+            for(int i = 0; i < NUMDIRS; ++i)
+            {
+                if(valid_coords(current->get_dim(0)+dX[i], current->get_dim(1)+dY[i]) && goal_not_expanded() )
+                {
+                    evaluate_neighbor_no_heuristic(current, dX[i], dY[i]);
+                }
+            }
+        }
+
+       bool set_costs_no_heuristic(planNode* neighbor, int cumulative_cost) //returns true if an obstacle
+        {
+            bool obs_flag = neighbor-> set_c(map[get_map_ind(neighbor->get_dim(0), neighbor->get_dim(1))], collision_thresh); 
+            if(!(obs_flag)); //set_c returns true if obstacle
+            {
+                neighbor->set_g_cumulative(cumulative_cost); //node adds cost to the provided cumulative cost. 
+                return obs_flag; 
+            }
+        }
+
+
+        void add_traj_to_open()
+        {
+            for(int i = 0; i < target_steps; ++i)
+            {
+                planNode* traj_node = new planNode(target_traj[i], target_traj[target_steps-1 + i]);
+                add_to_open(traj_node);
+            }
+        }
+
+        void reverse_dijkstra()
+        {
+            while(!open_is_empty() && goal_not_expanded())  
+            {
+                planNode* current = new planNode();
+                current = get_next_from_open();
+                std::tuple<int, int> new_key;
+                new_key = std::make_tuple(current->get_dim(0),current->get_dim(1));
+                if(!in_closed(new_key)) //current is in closed, so already evaluated. 
+                {
+                    evaluate_neighbors_no_heuristic(current);
+                    add_to_closed(current);
+                    heuristic_map.emplace(new_key, current->get_g());
+                    // mexPrintf("%d \n", heuristic_map.find(new_key)->second);
+                }
+                else
+                {
+                    delete current; //memory management
+                }
+            }
+        }
+
+        void run_as_heuristic()
+        {
+            add_traj_to_open();
+            mexPrintf("Open list size: %d\n", open_list.size());
+            mexPrintf("Executing reverse diklstra...\n");
+            reverse_dijkstra();
+            mexPrintf("Complete...%d\n", heuristic_lookup(120,120));
+            // print_heuristic();
+        }
+
+        
+
+        int heuristic_lookup(int x, int y)
+        {
+            std::tuple<int, int> input_loc = std::make_tuple(x,y);
+            return heuristic_lookup(input_loc);
+        }
+
+        int heuristic_lookup(std::tuple<int, int> input_loc)
+        {
+            if(heuristic_map.find(input_loc) != heuristic_map.end())
+            {
+                return heuristic_map.find(input_loc)->second;
+            }
+            else 
+            {
+                return -2;
+            }
+        }
+
+        void print_heuristic()
+        {
+            for (int i = 40; i <x_size; ++i)
+            {
+                for(int j = 40; j < y_size; ++j)
+                {
+                    mexPrintf("%d\n",heuristic_lookup(i,j));
+                }
+            }
+        }
+
 };

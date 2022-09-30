@@ -72,8 +72,10 @@ static void planner(
         int robotposeYcorrected = robotposeY;
         // mexPrintf("\nInitial Pose \n X: %d, Y: %d\n", robotposeXcorrected, robotposeYcorrected);
         planner_2d = kataPlanner2D(map, x_size, y_size, target_steps, target_traj, collision_thresh, robotposeXcorrected, robotposeYcorrected);
+        // planner_3d = kataPlanner3D(map, x_size, y_size, target_steps, target_traj, collision_thresh, robotposeXcorrected, robotposeYcorrected);
 
-        planner_2d.generate_path();
+        // planner_3d.generate_path();
+        planner_2d.run_as_heuristic();
         first_run_complete = true;
         mexPrintf("Planning complete. \n");
         action_ptr[0] = robotposeX;
@@ -82,10 +84,10 @@ static void planner(
     }
     else
     {
-        action_ptr[0] = planner_2d.get_x_dir(time_count)+1;
-        action_ptr[1] = planner_2d.get_y_dir(time_count)+1;
+        // action_ptr[0] = planner_3d.get_x_dir(time_count)+1;
+        // action_ptr[1] = planner_3d.get_y_dir(time_count)+1;
         // mexPrintf("action pointer: \n X: %d, Y: %d\n", action_ptr[0],action_ptr[1]);
-        time_count++;
+        // time_count++;
     }
 
     return;
