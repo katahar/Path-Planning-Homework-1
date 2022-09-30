@@ -252,217 +252,6 @@ class kataPlanner
 
 };
 
-
-class kataPlanner3D : public kataPlanner
-{
-    public:
-        #define axes 3 
-        double*	heuristic_map;
-        int last_goal_t_step = -1;
-        std::unordered_map<std::tuple<int, int, int>,double,tuple_hash_function> open_g_track;
-        // kataPlanner2D heuristic;
-
-        kataPlanner3D()
-        :kataPlanner()
-        {
-
-        }
-        
-        kataPlanner3D(double* map_in, int x_size, int y_size, int target_steps, double* target_traj, int col_thresh, int robotposeX, int robotposeY)
-        :kataPlanner(map_in, x_size, y_size, target_steps, target_traj, col_thresh, robotposeX, robotposeY)
-        {
-            // heuristic = kataPlanner2D(map_in, x_size, y_size, target_steps, target_traj, col_thresh, robotposeX, robotposeY);
-        }
-
-        void evaluate_neighbors(planNode* current)
-        {
-            for(int i = 0; i < NUMDIRS; ++i)
-            {
-                if(valid_coords(current->get_dim(0)+dX[i], current->get_dim(1)+dY[i], current->get_dim(2)+1 ) && goal_not_expanded() )
-                {
-                    evaluate_neighbor(current, dX[i], dY[i], 1);
-                }
-
-                if(cur_is_goal(current)) 
-                {
-                    mark_expanded(current); 
-                    return;
-                }
-            }
-            // print_open();
-        }
-
-        bool improved_g(planNode* new_candidate) // true if the new candidate has a better g value than existing (if any ) g for that location. 
-        {
-            auto search_iter = open_g_track.find(std::make_tuple(new_candidate->get_dim(0), new_candidate->get_dim(1), new_candidate->get_dim(2)));
-            if( search_iter != open_g_track.end()) //found candidate in open list
-            {
-                // mexPrintf("Found something: ");
-                // mexPrintf("existing g: %d, new g: %d\n",search_iter->second, new_candidate->get_g());
-                if(search_iter->second > new_candidate->get_g()) //new candidate has better g value
-                {
-                    // search_iter->second = new_candidate->get_g();
-                    return true; 
-                    // mexPrintf("\tNeed to update value\n");
-                }
-                else
-                {
-                    return false;
-                    // mexPrintf("\tExisting value is better\n");
-                }
-            }
-            else
-            {
-                // mexPrintf("No value in open list yet\n");
-                return true; 
-                //meaning that it is not in open. 
-            }
-        }
-
-        void print_open()
-        {
-            std::priority_queue<planNode*, std::vector<planNode*>, compareFvals> print_open_list;      
-
-            print_open_list = open_list;
-
-            mexPrintf("Latest Open list by F:\n");
-            while(!print_open_list.empty())
-            {
-                mexPrintf("%d\n",print_open_list.top()->get_f());
-                print_open_list.pop();
-            }     
-
-        }
-
-        void add_to_open(planNode* input)
-        {
-            std::tuple<int, int, int> new_key= std::tuple<int, int, int>(input->get_dim(0), input->get_dim(1), input->get_dim(2));
-            open_g_track.erase(new_key); //doesnt matter if there is no corresponding key in the map
-            open_g_track.insert({new_key,input->get_g()});
-            // mexPrintf("Retrieved g: %d\n", open_g_track.find(new_key)->second);
-            open_list.push(input);
-        }
-        
-        bool cur_is_goal(planNode* input) //introducing offset here. 
-        {
-            int elapsed = cumulative_time();
-            if(target_traj[elapsed + last_goal_t_step] ==  input->get_dim(0) &&
-               target_traj[target_steps-1 + elapsed + last_goal_t_step] ==  input->get_dim(1) )
-               {
-                    input->set_is_goal(true);
-                    mexPrintf("Intercept t value: %d", elapsed+last_goal_t_step );
-                    return true;
-               }
-            return false;
-        }
-
-        void generate_heuristic()
-        {
-
-        }
-
-        void generate_path()
-        {
-            planNode* start = new planNode(robotposeX, robotposeY, 0);
-            start->set_is_start();
-            add_to_open(start);
-
-            while(!open_is_empty() && goal_not_expanded())  
-            {
-                planNode* current = new planNode();
-                current = get_next_from_open();
-                if(!in_closed(std::make_tuple(current->get_dim(0), current->get_dim(1), current->get_dim(2)))) //current is in closed, so already evaluated. 
-                {
-                    evaluate_neighbors(current);
-                    add_to_closed(current);
-                }
-                else
-                {
-                    delete current; //memory management
-                }
-            }
-
-            if(open_is_empty())
-            {
-                mexPrintf("Terminated because Open list is empty. \n");
-            }
-            if(goal_not_expanded())
-            {
-                mexPrintf("goal was not expanded. \n");
-            }
-            populate_path(last_found_goal);
-
-        }
-
-        void populate_path(planNode* goal)
-        {
-            // mexPrintf("Populating path."); // x: %d, y: %d\n", goal->get_dim(0),goal->get_dim(1));
-            planNode* current = new planNode();
-            current = goal;
-            planNode* prev = new planNode();
-            prev = goal->get_prev_ptr();
-            int count = 0; 
-
-            while(!(prev->get_is_start()))
-            {
-                path.insert(path.begin(), current->get_dim(1)); //puts at the beginning. 
-                path.insert(path.begin(), current->get_dim(0));
-                // mexPrintf("%f \n", map[get_map_ind(current->get_dim(0), current->get_dim(1))] );
-                current = prev;
-                prev = current->get_prev_ptr();
-            } 
-            path.insert(path.begin(), current -> get_dim(1)); 
-            path.insert(path.begin(), current -> get_dim(0));
-            path.insert(path.begin(), prev -> get_dim(1)); 
-            path.insert(path.begin(), prev -> get_dim(0));
-            // mexPrintf("Population complete \n");
-        }
-       
-        void mark_expanded(planNode* goal_input)
-        {
-            last_found_goal = goal_input->get_ptr();
-            expanded_goal = true;
-            goal_input->set_is_goal(true);
-            mexPrintf("Goal found! (%d, %d, %d)\n", goal_input->get_dim(0), goal_input->get_dim(1), goal_input->get_dim(2));
-        }
-
-        int get_x_dir(int t_step)
-        {
-            return path[2*t_step];
-        }
-
-        int get_y_dir(int t_step)
-        {
-            return path[(2*t_step) + 1];
-        }
-
-        void evaluate_neighbor(planNode* current, int rel_x, int rel_y, int rel_t)
-        {
-            if(!in_closed(std::make_tuple(current->get_dim(0)+rel_x,current->get_dim(1)+rel_y, current->get_dim(2)+rel_t))) //verify that the neighbor is not already in the closed list
-            {
-                planNode* neighbor = new planNode(current->get_dim(0) + rel_x, current->get_dim(1) + rel_y, current->get_dim(2)+rel_t);
-                if(!(set_costs(neighbor, current->get_g())) && improved_g(neighbor))//returns true if neighbor has a better g value than the one currently in the open list. 
-                {
-                    neighbor -> set_prev(current);
-                    add_to_open(neighbor);
-                }
-                else
-                {
-                    delete neighbor;
-                }
-
-            }
-        }
-
-        void add_to_closed(planNode* input)
-        {
-            std::tuple<int, int, int> temp_tuple = std::make_tuple(input->get_dim(0),input->get_dim(1),input->get_dim(2));
-            closed_list.insert(temp_tuple);
-        }
-
-
-};
-
 class kataPlanner2D : public kataPlanner
 {
     public:
@@ -528,8 +317,8 @@ class kataPlanner2D : public kataPlanner
             auto search_iter = open_g_track.find(std::make_tuple(new_candidate->get_dim(0), new_candidate->get_dim(1)));
             if( search_iter != open_g_track.end()) //found candidate in open list
             {
-                // mexPrintf("Found something: ");
-                // mexPrintf("existing g: %d, new g: %d\n",search_iter->second, new_candidate->get_g());
+                mexPrintf("Found something: ");
+                mexPrintf("existing g: %d, new g: %d\n",search_iter->second, new_candidate->get_g());
                 if(search_iter->second > new_candidate->get_g()) //new candidate has better g value
                 {
                     // search_iter->second = new_candidate->get_g();
@@ -787,6 +576,226 @@ class kataPlanner2D : public kataPlanner
                 {
                     mexPrintf("%d\n",heuristic_lookup(i,j));
                 }
+            }
+        }
+
+};
+
+
+class kataPlanner3D : public kataPlanner
+{
+    public:
+        #define axes 3 
+        double*	heuristic_map;
+        int last_goal_t_step = -1;
+        std::unordered_map<std::tuple<int, int, int>,int,tuple_hash_function> open_g_track3D;
+        kataPlanner2D heuristic_planner;
+
+        kataPlanner3D()
+        :kataPlanner()
+        {
+
+        }
+        
+        kataPlanner3D(double* map_in, int x_size, int y_size, int target_steps, double* target_traj, int col_thresh, int robotposeX, int robotposeY)
+        :kataPlanner(map_in, x_size, y_size, target_steps, target_traj, col_thresh, robotposeX, robotposeY)
+        {
+            heuristic_planner = kataPlanner2D(map_in, x_size, y_size, target_steps, target_traj, col_thresh, robotposeX, robotposeY);
+            heuristic_planner.run_as_heuristic();
+        }
+
+        void evaluate_neighbors(planNode* current)
+        {
+            for(int i = 0; i < NUMDIRS; ++i)
+            {
+                if(valid_coords(current->get_dim(0)+dX[i], current->get_dim(1)+dY[i], current->get_dim(2)+1 ) && goal_not_expanded() )
+                {
+                    evaluate_neighbor(current, dX[i], dY[i], 1);
+                }
+
+                if(cur_is_goal(current)) 
+                {
+                    mark_expanded(current); 
+                    return;
+                }
+            }
+            // print_open();
+        }
+
+        bool improved_g(planNode* new_candidate) // true if the new candidate has a better g value than existing (if any ) g for that location. 
+        {
+            auto search_iter = open_g_track3D.find(std::make_tuple(new_candidate->get_dim(0), new_candidate->get_dim(1), new_candidate->get_dim(2)));
+            if( search_iter != open_g_track3D.end()) //found candidate in open list
+            {
+                // mexPrintf("Found something: ");
+                // mexPrintf("existing g: %d, new g: %d\n",search_iter->second, new_candidate->get_g());
+                if(search_iter->second > new_candidate->get_g()) //new candidate has better g value
+                {
+                    // search_iter->second = new_candidate->get_g();
+                    return true; 
+                    // mexPrintf("\tNeed to update value\n");
+                }
+                else
+                {
+                    return false;
+                    // mexPrintf("\tExisting value is better\n");
+                }
+            }
+            else
+            {
+                // mexPrintf("No value in open list yet\n");
+                return true; 
+                //meaning that it is not in open. 
+            }
+        }
+
+        void print_open()
+        {
+            std::priority_queue<planNode*, std::vector<planNode*>, compareFvals> print_open_list;      
+
+            print_open_list = open_list;
+
+            mexPrintf("Latest Open list by F:\n");
+            while(!print_open_list.empty())
+            {
+                mexPrintf("%d\n",print_open_list.top()->get_f());
+                print_open_list.pop();
+            }     
+
+        }
+
+        void add_to_open(planNode* input)
+        {
+            std::tuple<int, int, int> new_key= std::tuple<int,int, int>(input->get_dim(0), input->get_dim(1), input->get_dim(2));
+            // new_key = std::tuple<int, int, int>(input->get_dim(0), input->get_dim(1), input->get_dim(2));
+            open_g_track3D.erase(new_key); //doesnt matter if there is no corresponding key in the map
+            // int insert_g = input->get_g(); 
+            open_g_track3D.insert({new_key,input->get_g()});
+            // mexPrintf("Retrieved g: %d\n", open_g_track.find(new_key)->second);
+            open_list.push(input);
+        }
+        
+        bool cur_is_goal(planNode* input) //introducing offset here. 
+        {
+            int elapsed = cumulative_time();
+            if(target_traj[input->get_dim(2)+elapsed] ==  input->get_dim(0) &&
+               target_traj[target_steps-1 + input->get_dim(2)+elapsed] ==  input->get_dim(1) )
+               {
+                    input->set_is_goal(true);
+                    mexPrintf("Intercept t value: %d\t", elapsed+last_goal_t_step );
+                    return true;
+               }
+            return false;
+        }
+
+        void generate_path()
+        {
+            planNode* start = new planNode(robotposeX, robotposeY, 0);
+            start->set_is_start();
+            add_to_open(start);
+
+            while(!open_is_empty() && goal_not_expanded())  
+            {
+                planNode* current = new planNode();
+                current = get_next_from_open();
+                if(!in_closed(std::make_tuple(current->get_dim(0), current->get_dim(1), current->get_dim(2)))) //current is in closed, so already evaluated. 
+                {
+                    evaluate_neighbors(current);
+                    add_to_closed(current);
+                }
+                else
+                {
+                    delete current; //memory management
+                }
+            }
+
+            if(open_is_empty())
+            {
+                mexPrintf("Terminated because Open list is empty. \n");
+            }
+            if(goal_not_expanded())
+            {
+                mexPrintf("goal was not expanded. \n");
+            }
+            populate_path(last_found_goal);
+
+        }
+
+        void populate_path(planNode* goal)
+        {
+            mexPrintf("Populating path."); // x: %d, y: %d\n", goal->get_dim(0),goal->get_dim(1));
+            planNode* current = new planNode();
+            current = goal;
+            planNode* prev = new planNode();
+            prev = goal->get_prev_ptr();
+            int count = 0; 
+
+            while(!(prev->get_is_start()))
+            {
+                path.insert(path.begin(), current->get_dim(1)); //puts at the beginning. 
+                path.insert(path.begin(), current->get_dim(0));
+                // mexPrintf("%f \n", map[get_map_ind(current->get_dim(0), current->get_dim(1))] );
+                current = prev;
+                prev = current->get_prev_ptr();
+            } 
+            path.insert(path.begin(), current -> get_dim(1)); 
+            path.insert(path.begin(), current -> get_dim(0));
+            path.insert(path.begin(), prev -> get_dim(1)); 
+            path.insert(path.begin(), prev -> get_dim(0));
+            // mexPrintf("Population complete \n");
+        }
+       
+        void mark_expanded(planNode* goal_input)
+        {
+            last_found_goal = goal_input->get_ptr();
+            expanded_goal = true;
+            goal_input->set_is_goal(true);
+            mexPrintf("Goal found! (%d, %d, %d)\n", goal_input->get_dim(0), goal_input->get_dim(1), goal_input->get_dim(2));
+        }
+
+        int get_x_dir(int t_step)
+        {
+            return path[2*t_step];
+        }
+
+        int get_y_dir(int t_step)
+        {
+            return path[(2*t_step) + 1];
+        }
+
+        void evaluate_neighbor(planNode* current, int rel_x, int rel_y, int rel_t)
+        {
+            if(!in_closed(std::make_tuple(current->get_dim(0)+rel_x,current->get_dim(1)+rel_y, current->get_dim(2)+rel_t))) //verify that the neighbor is not already in the closed list
+            {
+                planNode* neighbor = new planNode(current->get_dim(0) + rel_x, current->get_dim(1) + rel_y, current->get_dim(2)+rel_t);
+                if(!(set_costs(neighbor, current->get_g())) && improved_g(neighbor))//returns true if neighbor has a better g value than the one currently in the open list. 
+                {
+                    neighbor -> set_prev(current);
+                    add_to_open(neighbor);
+                }
+                else
+                {
+                    delete neighbor;
+                }
+
+            }
+        }
+
+        void add_to_closed(planNode* input)
+        {
+            std::tuple<int, int, int> temp_tuple = std::make_tuple(input->get_dim(0),input->get_dim(1),input->get_dim(2));
+            closed_list.insert(temp_tuple);
+        }
+
+
+        bool set_costs(planNode* neighbor, int cumulative_cost) //returns true if an obstacle
+        {
+            bool obs_flag = neighbor-> set_c(map[get_map_ind(neighbor->get_dim(0), neighbor->get_dim(1))], collision_thresh); 
+            if(!(obs_flag)); //set_c returns true if obstacle
+            {
+                neighbor->set_g_cumulative(cumulative_cost); //node adds cost to the provided cumulative cost. 
+                neighbor->set_h(1*heuristic_planner.heuristic_lookup(neighbor->get_dim(0),neighbor->get_dim(1))); //@TODO: add in heuristics. 
+                return obs_flag; 
             }
         }
 
