@@ -5,10 +5,10 @@
 class planNode
 {
     private:
-        int f = 100000;
+        int f = 0;
         int g = 100000;
-        int h = 100000;
-        int c = 100000;
+        int h = 0;
+        int c = 0;
         bool flag_is_goal = false; 
         bool is_obstacle = false; 
         int collision_thresh = 0.0;
@@ -41,6 +41,18 @@ class planNode
             this -> num_dims = 2; 
         }
 
+        // planNode(std::vector<int> input_coords, double c, double collision_thresh)
+        // {
+        //     mexPrintf("~~~~~~Inside secondary planNode constructor\n");
+        //     this -> coordinates.push_back(input_coords[0]);
+        //     this -> coordinates.push_back(input_coords[1]);
+        //     this -> coordinates.push_back(input_coords[2]);
+        //     num_dims = coordinates.size();
+        //     set_c(c);
+        //     set_collision_thresh(collision_thresh);
+        //     set_c(c, collision_thresh);
+        // }      
+
         void update_f()
         {
             this -> f = this -> g + this -> h;
@@ -72,9 +84,9 @@ class planNode
 
         bool set_c(int c_in, int collision_thresh_in)
         {
-            set_c(c_in);
+            this -> c = c_in;
             this -> collision_thresh = collision_thresh_in;
-            if(this->c >= collision_thresh)
+            if(c_in >= collision_thresh)
             {
                 this -> is_obstacle = true;
             }

@@ -133,6 +133,8 @@ class kataPlanner
             planNode* ret_val = new planNode();
             ret_val = open_list.top();
             open_list.pop();
+            // mexPrintf("Popped x: %d, y: %d, t:%d, g: %d, OL: %d\n", ret_val->get_dim(0), ret_val->get_dim(1), ret_val->get_dim(2), ret_val->get_g(), open_list.size());
+
             return ret_val;
         }
 
@@ -601,7 +603,9 @@ class kataPlanner3D : public kataPlanner
         :kataPlanner(map_in, x_size, y_size, target_steps, target_traj, col_thresh, robotposeX, robotposeY)
         {
             heuristic_planner = kataPlanner2D(map_in, x_size, y_size, target_steps, target_traj, col_thresh, robotposeX, robotposeY);
+            mexPrintf("Starting heuristic. \n");
             heuristic_planner.run_as_heuristic();
+            mexPrintf("Heristic calculation complete. \n");
         }
 
         void evaluate_neighbors(planNode* current)
@@ -611,12 +615,12 @@ class kataPlanner3D : public kataPlanner
                 if(valid_coords(current->get_dim(0)+dX[i], current->get_dim(1)+dY[i], current->get_dim(2)+1 ) && goal_not_expanded() )
                 {
                     evaluate_neighbor(current, dX[i], dY[i], 1);
-                }
-
-                if(cur_is_goal(current)) 
-                {
-                    mark_expanded(current); 
-                    return;
+               
+                    if(cur_is_goal(current)) 
+                    {
+                        mark_expanded(current); 
+                        return;
+                    }
                 }
             }
             // print_open();
@@ -624,21 +628,22 @@ class kataPlanner3D : public kataPlanner
 
         bool improved_g(planNode* new_candidate) // true if the new candidate has a better g value than existing (if any ) g for that location. 
         {
-            auto search_iter = open_g_track3D.find(std::make_tuple(new_candidate->get_dim(0), new_candidate->get_dim(1), new_candidate->get_dim(2)));
-            if( search_iter != open_g_track3D.end()) //found candidate in open list
+            auto existing_entry = open_g_track3D.find(std::make_tuple(new_candidate->get_dim(0), new_candidate->get_dim(1), new_candidate->get_dim(2)));
+            if( existing_entry != open_g_track3D.end()) //found candidate in open list
             {
                 // mexPrintf("Found something: ");
-                // mexPrintf("existing g: %d, new g: %d\n",search_iter->second, new_candidate->get_g());
-                if(search_iter->second > new_candidate->get_g()) //new candidate has better g value
+                //  mexPrintf("\texisting g: %d, new g: %d, x: %d, y: %d, t:%d\n",existing_entry->second, new_candidate->get_g(), new_candidate->get_dim(0), new_candidate->get_dim(1), new_candidate->get_dim(2));
+                if(existing_entry->second <= new_candidate->get_g()) 
                 {
-                    // search_iter->second = new_candidate->get_g();
-                    return true; 
-                    // mexPrintf("\tNeed to update value\n");
+                    return false;
                 }
                 else
                 {
-                    return false;
+                    //new candidate has better g value THIS NEVER HAPPENS
                     // mexPrintf("\tExisting value is better\n");
+                    mexPrintf("TEST\n");
+                    mexPrintf("\tNeed to update value\n");
+                    return true; 
                 }
             }
             else
@@ -667,9 +672,7 @@ class kataPlanner3D : public kataPlanner
         void add_to_open(planNode* input)
         {
             std::tuple<int, int, int> new_key= std::tuple<int,int, int>(input->get_dim(0), input->get_dim(1), input->get_dim(2));
-            // new_key = std::tuple<int, int, int>(input->get_dim(0), input->get_dim(1), input->get_dim(2));
             open_g_track3D.erase(new_key); //doesnt matter if there is no corresponding key in the map
-            // int insert_g = input->get_g(); 
             open_g_track3D.insert({new_key,input->get_g()});
             // mexPrintf("Retrieved g: %d\n", open_g_track.find(new_key)->second);
             open_list.push(input);
@@ -678,20 +681,36 @@ class kataPlanner3D : public kataPlanner
         bool cur_is_goal(planNode* input) //introducing offset here. 
         {
             int elapsed = cumulative_time();
-            if(target_traj[input->get_dim(2)+elapsed] ==  input->get_dim(0) &&
-               target_traj[target_steps-1 + input->get_dim(2)+elapsed] ==  input->get_dim(1) )
+            if(elapsed+input->get_dim(2) <= target_steps)
+            {
+                // mexPrintf("Target %d, Node Time %d, elapsed time %d, combined%d\n",target_steps, input->get_dim(2),elapsed,input->get_dim(2)+elapsed );
+                if(int(target_traj[input->get_dim(2)+elapsed]) ==  input->get_dim(0) &&
+               int(target_traj[target_steps + input->get_dim(2)+elapsed]) ==  input->get_dim(1) )
+
+            //    if(target_traj[target_steps-1]-1 ==  input->get_dim(0) &&
+            //     target_traj[target_steps-1 + target_steps]-1 ==  input->get_dim(1) )
                {
                     input->set_is_goal(true);
-                    mexPrintf("Intercept t value: %d\t", elapsed+last_goal_t_step );
+                    mexPrintf("Intercept x value: %d\n", input->get_dim(0) );
+                    mexPrintf("Intercept y value: %d\n", input->get_dim(1) );
+                    mexPrintf("Intercept t value: %d\n", elapsed+input->get_dim(2) );
+
                     return true;
                }
+            }
+            if(elapsed > target_steps)
+            {
+                mexPrintf("Failed to find goal in time. I'll still run though :/ \n");
+            }
             return false;
+
         }
 
         void generate_path()
         {
             planNode* start = new planNode(robotposeX, robotposeY, 0);
             start->set_is_start();
+            start->set_g(0);
             add_to_open(start);
 
             while(!open_is_empty() && goal_not_expanded())  
@@ -705,7 +724,7 @@ class kataPlanner3D : public kataPlanner
                 }
                 else
                 {
-                    delete current; //memory management
+                    // delete current; //memory management
                 }
             }
 
@@ -715,7 +734,7 @@ class kataPlanner3D : public kataPlanner
             }
             if(goal_not_expanded())
             {
-                mexPrintf("goal was not expanded. \n");
+                mexPrintf("goal was not expanded.  \n");
             }
             populate_path(last_found_goal);
 
@@ -740,8 +759,10 @@ class kataPlanner3D : public kataPlanner
             } 
             path.insert(path.begin(), current -> get_dim(1)); 
             path.insert(path.begin(), current -> get_dim(0));
-            path.insert(path.begin(), prev -> get_dim(1)); 
-            path.insert(path.begin(), prev -> get_dim(0));
+            // path.insert(path.begin(), prev -> get_dim(1));  //remove this in 2d?
+            // path.insert(path.begin(), prev -> get_dim(0));
+            // print_path();
+
             // mexPrintf("Population complete \n");
         }
        
@@ -768,16 +789,19 @@ class kataPlanner3D : public kataPlanner
             if(!in_closed(std::make_tuple(current->get_dim(0)+rel_x,current->get_dim(1)+rel_y, current->get_dim(2)+rel_t))) //verify that the neighbor is not already in the closed list
             {
                 planNode* neighbor = new planNode(current->get_dim(0) + rel_x, current->get_dim(1) + rel_y, current->get_dim(2)+rel_t);
-                if(!(set_costs(neighbor, current->get_g())) && improved_g(neighbor))//returns true if neighbor has a better g value than the one currently in the open list. 
+
+                if((!(set_costs(neighbor, current->get_g()))) && improved_g(neighbor) ) //returns true if neighbor has a better g value than the one currently in the open list. 
                 {
+                    // mexPrintf("Adding to open \n");
                     neighbor -> set_prev(current);
                     add_to_open(neighbor);
+                    // mexPrintf("\tEvaluating neighbor x: %d, y: %d, t:%d, g: %d\n", neighbor->get_dim(0), neighbor->get_dim(1), neighbor->get_dim(2), neighbor->get_g());
+
                 }
                 else
                 {
                     delete neighbor;
                 }
-
             }
         }
 
@@ -794,7 +818,7 @@ class kataPlanner3D : public kataPlanner
             if(!(obs_flag)); //set_c returns true if obstacle
             {
                 neighbor->set_g_cumulative(cumulative_cost); //node adds cost to the provided cumulative cost. 
-                neighbor->set_h(1*heuristic_planner.heuristic_lookup(neighbor->get_dim(0),neighbor->get_dim(1))); //@TODO: add in heuristics. 
+                neighbor->set_h(1*heuristic_planner.heuristic_lookup(neighbor->get_dim(0),neighbor->get_dim(1)));
                 return obs_flag; 
             }
         }
