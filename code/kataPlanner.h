@@ -526,6 +526,7 @@ class kataPlanner2D : public kataPlanner
             for(int i = 0; i < target_steps; ++i)
             {
                 planNode* traj_node = new planNode(target_traj[i], target_traj[target_steps-1 + i]);
+                traj_node -> set_c(map[get_map_ind(traj_node ->get_dim(0), traj_node ->get_dim(1))]);
                 add_to_open(traj_node);
             }
         }
@@ -574,6 +575,7 @@ class kataPlanner2D : public kataPlanner
         {
             if(heuristic_map.find(input_loc) != heuristic_map.end())
             {
+                mexPrintf("Heuristic: %d\n", heuristic_map.find(input_loc)->second);
                 return heuristic_map.find(input_loc)->second;
             }
             else 
@@ -719,7 +721,7 @@ class kataPlanner3D : public kataPlanner
             }
             if(elapsed > target_steps)
             {
-                // mexPrintf("Failed to find goal in time. I'll still run though :/ \n");
+                mexPrintf("Failed to find goal in time. I'll still run though :/ \n");
             }
             return false;
 

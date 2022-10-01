@@ -47,7 +47,7 @@ class planNode
             t_coord = std::get<2>(coord_tuple);
             this -> tuple_3d = std::make_tuple(x_coord,y_coord,t_coord);
         }
-        
+
         planNode(int x, int y)
         {
             this -> x_coord = x;
@@ -103,6 +103,7 @@ class planNode
         void set_c(int c_in)
         {
             this -> c = c_in;
+            this -> set_g(c);
         }
 
         bool set_c(int c_in, int collision_thresh_in)
