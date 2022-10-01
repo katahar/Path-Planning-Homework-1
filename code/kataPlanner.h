@@ -223,18 +223,31 @@ class kataPlanner
             return false; 
         }
 
-        bool valid_coords(int x1, int y1, int t1 )
-        {
-            if(x1 > -1 && y1 > -1 && x1 < x_size && y1 < y_size)
-            {
-                return true; 
-            }
-            return false; 
-        }
+        // bool valid_coords(int x1, int y1, int t1 )
+        // {
+        //     if(x1 > -1 && y1 > -1 && x1 < x_size && y1 < y_size)
+        //     {
+        //         return true; 
+        //     }
+        //     return false; 
+        // }
 
         bool valid_coords(std::tuple<int, int, int> input )
         {
-            if( std::get<0>(input) > -1 && std::get<1>(input) > -1 && std::get<0>(input) < x_size && std::get<1>(input) < y_size && std::get<2>(input) <target_steps)
+            if( (std::get<0>(input) == 175) && (std::get<1>(input) == 100) ||
+                (std::get<0>(input) == 176) && (std::get<1>(input) == 101) ||
+                (std::get<0>(input) == 174 && (std::get<1>(input) == 99)))
+                {
+                    mexPrintf("valid coordinating this current x: %d, y: %d, t:%d\n", std::get<0>(input), std::get<1>(input), std::get<2>(input));
+                    // mexPrintf("FOUND x SECRETLY\n");
+
+                }
+
+            if( std::get<0>(input) > -1 && 
+                std::get<1>(input) > -1 && 
+                std::get<0>(input) < x_size && 
+                std::get<1>(input) < y_size && 
+                std::get<2>(input) <target_steps )
             {
                 return true; 
             }
@@ -634,6 +647,13 @@ class kataPlanner3D : public kataPlanner
             for(int i = 0; i < NUMDIRS; ++i)
             {
                 std::tuple<int,int,int> neighbor_tuple= std::make_tuple(current->get_dim(0)+dX[i], current->get_dim(1)+dY[i], current->get_dim(2)+1);
+                // if( (current->get_dim(0)+dX[i] == 174) ||
+                //     (current->get_dim(0) == 174))
+                // {
+                //     mexPrintf("Evaluating current x: %d, y: %d, t:%d, g: %d\n", current->get_dim(0), current->get_dim(1), current->get_dim(2), current->get_g());
+                //     // mexPrintf("FOUND x SECRETLY\n");
+
+                // }
                 if(valid_coords(neighbor_tuple) && goal_not_expanded() )
                 {
                     evaluate_neighbor(current, neighbor_tuple);
@@ -711,11 +731,8 @@ class kataPlanner3D : public kataPlanner
 
                 // mexPrintf("Target steps %d\tEvaluating Node (%d, %d, %d) \t Elapsed: %d \t X ind: %d Y ind: %d \t Goal(%d %d) \n", target_steps, input->get_dim(0), input->get_dim(1), input->get_dim(2), elapsed, input->get_dim(2)+elapsed, target_steps+input->get_dim(2)+elapsed, int(target_traj[input->get_dim(2)+elapsed]), int(target_traj[target_steps+input->get_dim(2)+elapsed]) );
                 
-                if(int(target_traj[input->get_dim(2)+elapsed]) ==  input->get_dim(0) &&
-                int(target_traj[target_steps + input->get_dim(2)+elapsed]) ==  input->get_dim(1) )
-
-            //    if(target_traj[target_steps-1]-1 ==  input->get_dim(0) &&
-            //     target_traj[target_steps-1 + target_steps]-1 ==  input->get_dim(1) )
+                if(int(target_traj[input->get_dim(2)+elapsed]-1) ==  input->get_dim(0) &&
+                int(target_traj[target_steps + input->get_dim(2)+elapsed]-1) ==  input->get_dim(1) )
                {
                     input->set_is_goal(true);
                     mexPrintf("Elapsed time: %d sec\n", elapsed);
@@ -728,7 +745,7 @@ class kataPlanner3D : public kataPlanner
             }
             if(elapsed > target_steps)
             {
-                mexPrintf("Failed to find goal in time. I'll still run though :/ \n");
+                // mexPrintf("Failed to find goal in time. I'll still run though :/ \n");
             }
             return false;
 
