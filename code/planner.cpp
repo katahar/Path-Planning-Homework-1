@@ -46,7 +46,7 @@
 
 bool first_run_complete = false; 
 kataPlanner3D planner_3d;
-kataPlanner2D planner_2d;
+// kataPlanner2D planner_2d;
 
 int time_count = 0; 
 

@@ -167,7 +167,7 @@ class kataPlanner
         int cumulative_time()
         {
             std::chrono::time_point<std::chrono::system_clock> curTime = std::chrono::system_clock::now();
-            return std::chrono::duration_cast<std::chrono::milliseconds>(curTime - startTime).count()/1000;
+            return ceil(std::chrono::duration_cast<std::chrono::milliseconds>(curTime - startTime).count()/1000);
         }
 
         bool goal_not_expanded()
@@ -234,7 +234,7 @@ class kataPlanner
 
         bool valid_coords(std::tuple<int, int, int> input )
         {
-            if( std::get<0>(input) > -1 && std::get<1>(input) > -1 && std::get<0>(input) < x_size && std::get<1>(input) < y_size)
+            if( std::get<0>(input) > -1 && std::get<1>(input) > -1 && std::get<0>(input) < x_size && std::get<1>(input) < y_size && std::get<2>(input) <target_steps)
             {
                 return true; 
             }
@@ -503,7 +503,7 @@ class kataPlanner2D : public kataPlanner
         {
             for(int i = 0; i < NUMDIRS; ++i)
             {
-                if(valid_coords(current->get_dim(0)+dX[i], current->get_dim(1)+dY[i]) && goal_not_expanded() )
+                if(valid_coords(current->get_dim(0)+dX[i], current->get_dim(1)+dY[i]) )
                 {
                     evaluate_neighbor_no_heuristic(current, dX[i], dY[i]);
                 }
@@ -525,7 +525,8 @@ class kataPlanner2D : public kataPlanner
         {
             for(int i = 0; i < target_steps; ++i)
             {
-                planNode* traj_node = new planNode(target_traj[i], target_traj[target_steps-1 + i]);
+                planNode* traj_node = new planNode(target_traj[i]-1, target_traj[target_steps + i]-1);
+                // mexPrintf("Adding from trajectory: (%d,%d)\n",traj_node ->get_dim(0), traj_node ->get_dim(1));
                 traj_node -> set_c(map[get_map_ind(traj_node ->get_dim(0), traj_node ->get_dim(1))]);
                 add_to_open(traj_node);
             }
@@ -533,7 +534,7 @@ class kataPlanner2D : public kataPlanner
 
         void reverse_dijkstra()
         {
-            while(!open_is_empty() && goal_not_expanded())  
+            while( !open_is_empty() && goal_not_expanded() )  
             {
                 planNode* current = new planNode();
                 current = get_next_from_open();
@@ -575,7 +576,7 @@ class kataPlanner2D : public kataPlanner
         {
             if(heuristic_map.find(input_loc) != heuristic_map.end())
             {
-                mexPrintf("Heuristic: %d\n", heuristic_map.find(input_loc)->second);
+                // mexPrintf("Heuristic: %d\n", heuristic_map.find(input_loc)->second);
                 return heuristic_map.find(input_loc)->second;
             }
             else 
@@ -584,14 +585,16 @@ class kataPlanner2D : public kataPlanner
             }
         }
 
+
         void print_heuristic()
         {
-            for (int i = 40; i <x_size; ++i)
+            for (int i = 0; i <x_size; ++i)
             {
-                for(int j = 40; j < y_size; ++j)
+                for(int j = 0; j < y_size; ++j)
                 {
-                    mexPrintf("%d\n",heuristic_lookup(i,j));
+                    mexPrintf("%d ",heuristic_lookup(i,j));
                 }
+                mexPrintf("\n");
             }
         }
 
@@ -607,6 +610,7 @@ class kataPlanner3D : public kataPlanner
         std::unordered_map<std::tuple<int, int, int>,int,tuple_hash_function> open_g_track3D;
         kataPlanner2D heuristic_planner;
 
+
         kataPlanner3D()
         :kataPlanner()
         {
@@ -620,10 +624,13 @@ class kataPlanner3D : public kataPlanner
             mexPrintf("Starting heuristic. \n");
             heuristic_planner.run_as_heuristic();
             mexPrintf("Heristic calculation complete. \n");
+            // heuristic_planner.print_heuristic();
         }
 
         void evaluate_neighbors(planNode* current)
         {
+            // mexPrintf("Evaluating current x: %d, y: %d, t:%d, g: %d\n", current->get_dim(0), current->get_dim(1), current->get_dim(2), current->get_g());
+
             for(int i = 0; i < NUMDIRS; ++i)
             {
                 std::tuple<int,int,int> neighbor_tuple= std::make_tuple(current->get_dim(0)+dX[i], current->get_dim(1)+dY[i], current->get_dim(2)+1);
@@ -698,7 +705,7 @@ class kataPlanner3D : public kataPlanner
         bool cur_is_goal(planNode* input) //introducing offset here. 
         {
             int elapsed = cumulative_time();
-            if(elapsed+input->get_dim(2) <target_steps)
+            if(elapsed+input->get_dim(2) < target_steps)
             {
                 // mexPrintf("Target %d, Node Time %d, elapsed time %d, combined%d\n",target_steps, input->get_dim(2),elapsed,input->get_dim(2)+elapsed );
 
@@ -738,7 +745,7 @@ class kataPlanner3D : public kataPlanner
             {
                 planNode* current = new planNode();
                 current = get_next_from_open();
-                // mexPrintf("OL size%d \n", open_list.size());
+                // mexPrintf("OL size%d  CL Siz:%d\n", open_list.size(), closed_list.size());
                 // mexPrintf("Function %s line %d \n", __FUNCTION__, __LINE__);
                 if(!in_closed(current->get_tuple_3d())) //current is in closed, so already evaluated. 
                 {
@@ -863,8 +870,7 @@ class kataPlanner3D : public kataPlanner
             if(!(obs_flag)); //set_c returns true if obstacle
             {
                 neighbor->set_g_cumulative(cumulative_cost); //node adds cost to the provided cumulative cost. 
-                neighbor->set_h(1*heuristic_planner.heuristic_lookup(neighbor->get_dim(0),neighbor->get_dim(1)));
-                // mexPrintf("Set H value: %d", neighbor->get_h());
+                neighbor->set_h(10*heuristic_planner.heuristic_lookup(neighbor->get_dim(0),neighbor->get_dim(1)));
                 return obs_flag; 
             }
         }
