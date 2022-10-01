@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <vector>
 #include <limits>
+#include <tuple>
+
 
 class planNode
 {
@@ -19,6 +21,8 @@ class planNode
         int x_coord = -17;
         int y_coord = -17;
         int t_coord = -17;
+        std::tuple<int, int, int> tuple_3d;
+        std::tuple<int, int> tuple_2d;
 
     public:
 
@@ -31,14 +35,33 @@ class planNode
             this -> x_coord = x;
             this -> y_coord = y;
             this -> t_coord = t;
-            num_dims = 3; 
+            this -> num_dims = 3; 
+            this -> tuple_3d = std::make_tuple(x_coord,y_coord,t_coord);
         }
 
+        planNode(std::tuple<int,int,int> coord_tuple)
+        {
+            this -> num_dims = 3; 
+            x_coord = std::get<0>(coord_tuple);
+            y_coord = std::get<1>(coord_tuple);
+            t_coord = std::get<2>(coord_tuple);
+            this -> tuple_3d = std::make_tuple(x_coord,y_coord,t_coord);
+        }
+        
         planNode(int x, int y)
         {
             this -> x_coord = x;
             this -> y_coord = y;
             this -> num_dims = 2; 
+            this -> tuple_2d = std::make_tuple(x,y);
+
+        }
+
+        
+
+        std::tuple<int, int, int> get_tuple_3d()
+        {
+            return tuple_3d;
         }
 
         // planNode(std::vector<int> input_coords, double c, double collision_thresh)
