@@ -41,7 +41,7 @@ class kataPlanner
         int x_size;
         int y_size;
         int heuristic_weight = 1;
-
+        int last_x, last_y; 
         // std::priority_queue<planNode*, std::vector<planNode*>, std::greater<std::vector<planNode*>::value_type> > open_list; 
         
         struct compareFvals{
@@ -91,7 +91,7 @@ class kataPlanner
         int dX[NUMDIRS] = {-1, -1, -1,  0,  0,  1, 1, 1, 0};
         int dY[NUMDIRS] = {-1,  0,  1, -1,  1, -1, 0, 1, 0};
 
-        int last_x, last_y; 
+
     public: 
         
 
@@ -185,10 +185,10 @@ class kataPlanner
             startTime = std::chrono::system_clock::now();
         }
 
-        int cumulative_time()
+        double cumulative_time()
         {
             std::chrono::time_point<std::chrono::system_clock> curTime = std::chrono::system_clock::now();
-            return ceil(std::chrono::duration_cast<std::chrono::milliseconds>(curTime - startTime).count()/1000);
+            return std::chrono::duration_cast<std::chrono::milliseconds>(curTime - startTime).count()/1000;
         }
 
         bool goal_not_expanded()
@@ -317,7 +317,8 @@ class kataPlanner2D : public kataPlanner
         kataPlanner2D(double* map_in, int x_size, int y_size, int target_steps, double* target_traj, int col_thresh, int robotposeX, int robotposeY)
         :kataPlanner(map_in, x_size, y_size, target_steps, target_traj, col_thresh, robotposeX, robotposeY)
         {
-
+            this->robotposeX = robotposeX-1;
+            this->robotposeY = robotposeY-1;
         }
 
         bool cur_is_goal(planNode* input) //introducing offset here. 
@@ -341,9 +342,19 @@ class kataPlanner2D : public kataPlanner
 
             // return false;
             
+            //This works on map 4!!
             // mexPrintf("x ind: %d, y ind %d, targ: %d\n", input->get_dim(2),target_steps+input->get_dim(2), target_steps);
-            if(target_traj[input->get_dim(2)+1]-1 == input->get_dim(0) &&
-                target_traj[target_steps+input->get_dim(2)+1] ==  input->get_dim(1) )
+            // for(int i = 0; i < target_steps; ++i)
+            // {
+            //     if(input->get_dim(0)== target_traj[i]-1 && 
+            //         input->get_dim(1) == target_traj[target_steps+i]-1 )
+            //     {
+            //         return true;
+            //     }
+            // }
+
+            if(target_traj[input->get_dim(2)+2]-1 == input->get_dim(0) &&
+                target_traj[target_steps+input->get_dim(2)+2]-1 ==  input->get_dim(1) )
                 {
                     input->set_is_goal(true);
                     return true;
@@ -367,12 +378,12 @@ class kataPlanner2D : public kataPlanner
                 {
                     evaluate_neighbor(current, dX[i], dY[i]);
                 }
-
-                if(cur_is_goal(current)) 
-                {
-                    mark_expanded(current); 
-                    return;
-                }
+            }               
+            
+            if(cur_is_goal(current)) 
+            {
+                mark_expanded(current); 
+                return;
             }
             // print_open();
         }
@@ -547,8 +558,7 @@ class kataPlanner2D : public kataPlanner
             // }
 
             //append reverse trajectory
-
-
+            mexPrintf("Ending time %f", cumulative_time());
         }
 
         void populate_path(planNode* goal)
@@ -562,16 +572,16 @@ class kataPlanner2D : public kataPlanner
 
             while(!(prev->get_is_start()))
             {
-                path.insert(path.begin(), current->get_dim(1)); //puts at the beginning. 
-                path.insert(path.begin(), current->get_dim(0));
+                path.insert(path.begin(), current->get_dim(1)+1); //puts at the beginning. 
+                path.insert(path.begin(), current->get_dim(0)+1);
                 // mexPrintf("%f \n", map[get_map_ind(current->get_dim(0), current->get_dim(1))] );
                 current = prev;
                 prev = current->get_prev_ptr();
             } 
-            path.insert(path.begin(), current -> get_dim(1)); 
-            path.insert(path.begin(), current -> get_dim(0));
-            path.insert(path.begin(), prev -> get_dim(1)); 
-            path.insert(path.begin(), prev -> get_dim(0));
+            path.insert(path.begin(), current -> get_dim(1)+1); 
+            path.insert(path.begin(), current -> get_dim(0)+1);
+            path.insert(path.begin(), prev -> get_dim(1)+1); 
+            path.insert(path.begin(), prev -> get_dim(0)+1);
             // mexPrintf("Population complete \n");
 
         }
