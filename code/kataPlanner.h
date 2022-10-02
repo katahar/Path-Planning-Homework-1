@@ -307,6 +307,7 @@ class kataPlanner2D : public kataPlanner
         // double*	heuristic_map;
         std::unordered_map<std::tuple<int, int>,int,tuple_hash_function2D> open_g_track;
         std::unordered_map<std::tuple<int, int>,int,tuple_hash_function2D> heuristic_map;
+        bool first_run = true;
 
         kataPlanner2D()
         :kataPlanner()
@@ -323,48 +324,28 @@ class kataPlanner2D : public kataPlanner
 
         bool cur_is_goal(planNode* input) //introducing offset here. 
         {
-            // int elapsed = cumulative_time();
-            // if(target_traj[elapsed] ==  input->get_dim(0) &&
-            //    target_traj[target_steps-1 + elapsed] ==  input->get_dim(1) )
-            //    {
-            //         input->set_is_goal(true);
-            //         mexPrintf("Elapsed time: %d", elapsed);
-            //         return true;
-            //    }
-            // return false;
-          
-            // if(get_last_x() ==  input->get_dim(0) &&
-            //    get_last_y() ==  input->get_dim(1) )
-            //    {
-            //         input->set_is_goal(true);
-            //         return true;
-            //    }
-
-            // return false;
-            
-            // mexPrintf("x ind: %d, y ind %d, targ: %d\n", input->get_dim(2),target_steps+input->get_dim(2), target_steps);
-            for(int i = input->get_dim(2)+2; i < target_steps; ++i)
+            if(first_run)
             {
-                if(input->get_dim(0)== target_traj[i]-1 && 
-                    input->get_dim(1) == target_traj[target_steps+i]-1 )
-                {
-                    return true;
-                }
-            }
-
-            if(target_traj[input->get_dim(2)+2]-1 == input->get_dim(0) &&
+                // works for 6,5,4
+                if(target_traj[input->get_dim(2)+2]-1 == input->get_dim(0) &&
                 target_traj[target_steps+input->get_dim(2)+2]-1 ==  input->get_dim(1) )
                 {
                     input->set_is_goal(true);
                     return true;
                 }
-
-            // if(get_last_x() ==  input->get_dim(0) &&
-            //    get_last_y() ==  input->get_dim(1) )
-            //    {
-            //         input->set_is_goal(true);
-            //         return true;
-            //    }
+            }
+            else
+            {
+                //works for 3,2, 1
+                for(int i = input->get_dim(2)+2; i < target_steps; ++i)
+                {
+                    if(input->get_dim(0)== target_traj[i]-1 && 
+                        input->get_dim(1) == target_traj[target_steps+i]-1 )
+                    {
+                        return true;
+                    }
+                }
+            }
 
             return false;
         }
@@ -499,65 +480,41 @@ class kataPlanner2D : public kataPlanner
                 }
             }
 
-            if(open_is_empty())
+            if(open_is_empty() || goal_not_expanded())
             {
-                mexPrintf("Terminated because Open list is empty. \n");
-            }
-            if(goal_not_expanded())
-            {
-                mexPrintf("goal was not expanded. \n");
+                mexPrintf("Original planner failed. Modifying success definition.\n");
+                open_g_track.clear();
+                closed_list2D.clear();
+                first_run = false;
+                while(!open_list.empty())
+                {
+                    open_list.pop();
+                }
+
+                planNode* start = new planNode(robotposeX, robotposeY,0);
+                start->set_is_start();
+                add_to_open(start);
+
+                while(!open_is_empty() && goal_not_expanded())  
+                {
+                    planNode* current = new planNode();
+                    current = get_next_from_open();
+                    if(!in_closed(std::make_tuple(current->get_dim(0),current->get_dim(1) ))) //current is in closed, so already evaluated. 
+                    {
+                        evaluate_neighbors(current);
+                        add_to_closed(current);
+                    }
+                    else
+                    {
+                        delete current; //memory management
+                    }
+                }
+
             }
             
-        
             populate_path(last_found_goal);
-            // int new_step_len = path.size()/2; 
-            // while( new_step_len > target_steps)
-            // {
-            //     this->heuristic_weight = this->heuristic_weight*2;
-            //     mexPrintf("Rerunning with w= %d %i\n",this->heuristic_weight, this->heuristic_weight);
-            //     open_g_track.clear();
-            //     closed_list2D.clear();
-            //     while(open_list.size() > 0)
-            //     {
-            //         open_list.pop();
-            //     }
-
-            //     planNode* start = new planNode(robotposeX, robotposeY);
-            //     start->set_is_start();
-            //     add_to_open(start);
-
-            //     while(!open_is_empty() && goal_not_expanded())  
-            //     {
-            //         planNode* current = new planNode();
-            //         current = get_next_from_open();
-            //         if(!in_closed(std::make_tuple(current->get_dim(0),current->get_dim(1)))) //current is in closed, so already evaluated. 
-            //         {
-            //             evaluate_neighbors(current);
-            //             add_to_closed(current);
-            //         }
-            //         else
-            //         {
-            //             delete current; //memory management
-            //         }
-            //     }
-
-            //     // if(open_is_empty())
-            //     // {
-            //     //     mexPrintf("Terminated because Open list is empty. \n");
-            //     // }
-            //     // if(goal_not_expanded())
-            //     // {
-            //     //     mexPrintf("goal was not expanded. \n");
-            //     // }
-                
-            
-            //     populate_path(last_found_goal);
-            //     new_step_len = path.size()/2; 
-
-            // }
-
-            //append reverse trajectory
-            mexPrintf("Ending time %f", cumulative_time());
+           
+            // mexPrintf("Ending time %f", cumulative_time());
         }
 
         void populate_path(planNode* goal)
