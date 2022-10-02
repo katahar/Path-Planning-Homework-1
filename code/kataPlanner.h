@@ -342,16 +342,15 @@ class kataPlanner2D : public kataPlanner
 
             // return false;
             
-            //This works on map 4!!
             // mexPrintf("x ind: %d, y ind %d, targ: %d\n", input->get_dim(2),target_steps+input->get_dim(2), target_steps);
-            // for(int i = 0; i < target_steps; ++i)
-            // {
-            //     if(input->get_dim(0)== target_traj[i]-1 && 
-            //         input->get_dim(1) == target_traj[target_steps+i]-1 )
-            //     {
-            //         return true;
-            //     }
-            // }
+            for(int i = input->get_dim(2)+2; i < target_steps; ++i)
+            {
+                if(input->get_dim(0)== target_traj[i]-1 && 
+                    input->get_dim(1) == target_traj[target_steps+i]-1 )
+                {
+                    return true;
+                }
+            }
 
             if(target_traj[input->get_dim(2)+2]-1 == input->get_dim(0) &&
                 target_traj[target_steps+input->get_dim(2)+2]-1 ==  input->get_dim(1) )
