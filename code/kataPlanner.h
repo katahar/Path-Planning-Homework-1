@@ -158,9 +158,11 @@ class kataPlanner
 
         int scaled_slide_heuristic(planNode* neighbor)
         {
-            if(neighbor->get_dim(0) < target_steps)
+            if(neighbor->get_dim(2) < target_steps)
             {
-                return euclidean_dist(neighbor->get_dim(0), neighbor->get_dim(1), target_traj[target_steps-neighbor->get_dim(2)],target_traj[target_steps+target_steps-neighbor->get_dim(2)]);
+                // return euclidean_dist(neighbor->get_dim(0), neighbor->get_dim(1), target_traj[target_steps-neighbor->get_dim(2)],target_traj[target_steps+target_steps-neighbor->get_dim(2)]);
+                return euclidean_dist(neighbor->get_dim(0), neighbor->get_dim(1), target_traj[target_steps+neighbor->get_dim(2)]-1,target_traj[target_steps+neighbor->get_dim(2)]-1);
+
             }
             else
             {
@@ -338,19 +340,21 @@ class kataPlanner2D : public kataPlanner
             //    }
 
             // return false;
-            if(target_traj[target_steps-input->get_dim(2)] == input->get_dim(0) &&
-                target_traj[target_steps+target_steps-input->get_dim(2)] ==  input->get_dim(1) )
+            
+            // mexPrintf("x ind: %d, y ind %d, targ: %d\n", input->get_dim(2),target_steps+input->get_dim(2), target_steps);
+            if(target_traj[input->get_dim(2)+1]-1 == input->get_dim(0) &&
+                target_traj[target_steps+input->get_dim(2)+1] ==  input->get_dim(1) )
                 {
                     input->set_is_goal(true);
                     return true;
                 }
 
-            if(get_last_x() ==  input->get_dim(0) &&
-               get_last_y() ==  input->get_dim(1) )
-               {
-                    input->set_is_goal(true);
-                    return true;
-               }
+            // if(get_last_x() ==  input->get_dim(0) &&
+            //    get_last_y() ==  input->get_dim(1) )
+            //    {
+            //         input->set_is_goal(true);
+            //         return true;
+            //    }
 
             return false;
         }
@@ -461,7 +465,7 @@ class kataPlanner2D : public kataPlanner
             last_found_goal = goal_input->get_ptr();
             expanded_goal = true;
             goal_input->set_is_goal(true);
-            mexPrintf("Goal found! (%d, %d)\n", goal_input->get_dim(0), goal_input->get_dim(1));
+            mexPrintf("Goal found! (%d, %d, %d)\n", goal_input->get_dim(0), goal_input->get_dim(1), goal_input->get_dim(2));
         }
 
         void generate_path()
