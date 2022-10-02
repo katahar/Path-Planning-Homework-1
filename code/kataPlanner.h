@@ -40,6 +40,8 @@ class kataPlanner
         int collision_thresh;
         int x_size;
         int y_size;
+        int heuristic_weight = 1;
+
         // std::priority_queue<planNode*, std::vector<planNode*>, std::greater<std::vector<planNode*>::value_type> > open_list; 
         
         struct compareFvals{
@@ -90,8 +92,8 @@ class kataPlanner
         int dY[NUMDIRS] = {-1,  0,  1, -1,  1, -1, 0, 1, 0};
 
         int last_x, last_y; 
-        
     public: 
+        
 
         kataPlanner()
         {
@@ -149,9 +151,26 @@ class kataPlanner
             if(!(obs_flag)); //set_c returns true if obstacle
             {
                 neighbor->set_g_cumulative(cumulative_cost); //node adds cost to the provided cumulative cost. 
-                neighbor->set_h(1*end_heuristic(neighbor)); //@TODO: add in heuristics. 
+                neighbor->set_h(scaled_slide_heuristic(neighbor)); //@TODO: add in heuristics. 
                 return obs_flag; 
             }
+        }
+
+        int scaled_slide_heuristic(planNode* neighbor)
+        {
+            if(neighbor->get_dim(0) < target_steps)
+            {
+                return euclidean_dist(neighbor->get_dim(0), neighbor->get_dim(1), target_traj[target_steps-neighbor->get_dim(2)],target_traj[target_steps+target_steps-neighbor->get_dim(2)]);
+            }
+            else
+            {
+                return 100000000;
+            }
+        }
+
+        int euclidean_dist(int x1, int y1, int x2, int y2)
+        {
+            return int(std::sqrt( std::pow(x1-x2,2) + std::pow(y1-y2,2)));
         }
 
         int end_heuristic(planNode* input)
@@ -311,6 +330,21 @@ class kataPlanner2D : public kataPlanner
             //    }
             // return false;
           
+            // if(get_last_x() ==  input->get_dim(0) &&
+            //    get_last_y() ==  input->get_dim(1) )
+            //    {
+            //         input->set_is_goal(true);
+            //         return true;
+            //    }
+
+            // return false;
+            if(target_traj[target_steps-input->get_dim(2)] == input->get_dim(0) &&
+                target_traj[target_steps+target_steps-input->get_dim(2)] ==  input->get_dim(1) )
+                {
+                    input->set_is_goal(true);
+                    return true;
+                }
+
             if(get_last_x() ==  input->get_dim(0) &&
                get_last_y() ==  input->get_dim(1) )
                {
@@ -408,7 +442,7 @@ class kataPlanner2D : public kataPlanner
         {
             if(!in_closed(std::make_tuple(current->get_dim(0)+rel_x,current->get_dim(1)+rel_y))) //verify that the neighbor is not already in the closed list
             {
-                planNode* neighbor = new planNode(current->get_dim(0) + rel_x, current->get_dim(1) + rel_y);
+                planNode* neighbor = new planNode(current->get_dim(0) + rel_x, current->get_dim(1) + rel_y, current->get_dim(2) + 1);
                 if(!(set_costs(neighbor, current->get_g())) && improved_g(neighbor))//returns true if neighbor has a better g value than the one currently in the open list. 
                 {
                     neighbor -> set_prev(current);
@@ -432,7 +466,7 @@ class kataPlanner2D : public kataPlanner
 
         void generate_path()
         {
-            planNode* start = new planNode(robotposeX, robotposeY);
+            planNode* start = new planNode(robotposeX, robotposeY,0);
             start->set_is_start();
             add_to_open(start);
 
@@ -440,7 +474,7 @@ class kataPlanner2D : public kataPlanner
             {
                 planNode* current = new planNode();
                 current = get_next_from_open();
-                if(!in_closed(std::make_tuple(current->get_dim(0),current->get_dim(1)))) //current is in closed, so already evaluated. 
+                if(!in_closed(std::make_tuple(current->get_dim(0),current->get_dim(1) ))) //current is in closed, so already evaluated. 
                 {
                     evaluate_neighbors(current);
                     add_to_closed(current);
@@ -459,7 +493,58 @@ class kataPlanner2D : public kataPlanner
             {
                 mexPrintf("goal was not expanded. \n");
             }
+            
+        
             populate_path(last_found_goal);
+            // int new_step_len = path.size()/2; 
+            // while( new_step_len > target_steps)
+            // {
+            //     this->heuristic_weight = this->heuristic_weight*2;
+            //     mexPrintf("Rerunning with w= %d %i\n",this->heuristic_weight, this->heuristic_weight);
+            //     open_g_track.clear();
+            //     closed_list2D.clear();
+            //     while(open_list.size() > 0)
+            //     {
+            //         open_list.pop();
+            //     }
+
+            //     planNode* start = new planNode(robotposeX, robotposeY);
+            //     start->set_is_start();
+            //     add_to_open(start);
+
+            //     while(!open_is_empty() && goal_not_expanded())  
+            //     {
+            //         planNode* current = new planNode();
+            //         current = get_next_from_open();
+            //         if(!in_closed(std::make_tuple(current->get_dim(0),current->get_dim(1)))) //current is in closed, so already evaluated. 
+            //         {
+            //             evaluate_neighbors(current);
+            //             add_to_closed(current);
+            //         }
+            //         else
+            //         {
+            //             delete current; //memory management
+            //         }
+            //     }
+
+            //     // if(open_is_empty())
+            //     // {
+            //     //     mexPrintf("Terminated because Open list is empty. \n");
+            //     // }
+            //     // if(goal_not_expanded())
+            //     // {
+            //     //     mexPrintf("goal was not expanded. \n");
+            //     // }
+                
+            
+            //     populate_path(last_found_goal);
+            //     new_step_len = path.size()/2; 
+
+            // }
+
+            //append reverse trajectory
+
+
         }
 
         void populate_path(planNode* goal)
