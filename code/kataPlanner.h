@@ -41,7 +41,8 @@ class kataPlanner
         int x_size;
         int y_size;
         // std::priority_queue<planNode*, std::vector<planNode*>, std::greater<std::vector<planNode*>::value_type> > open_list; 
-        
+        double weight = 1;
+
         struct compareFvals{
             bool operator()(planNode* const& left, planNode* const& right)
             {
@@ -149,7 +150,7 @@ class kataPlanner
             if(!(obs_flag)); //set_c returns true if obstacle
             {
                 neighbor->set_g_cumulative(cumulative_cost); //node adds cost to the provided cumulative cost. 
-                neighbor->set_h(1*end_heuristic(neighbor)); //@TODO: add in heuristics. 
+                neighbor->set_h(weight*scaled_heuristic(neighbor)); //@TODO: add in heuristics. 
                 return obs_flag; 
             }
         }
@@ -157,6 +158,12 @@ class kataPlanner
         int end_heuristic(planNode* input)
         {
             return int(std::sqrt( std::pow(input->get_dim(0)-get_last_x(),2) + std::pow(input->get_dim(1)-get_last_y(),2)));
+        }
+
+        int scaled_heuristic(planNode* input)
+        {
+            int euclidean_dist = end_heuristic(input);
+            return (euclidean_dist/std::max(x_size,y_size))*(target_steps/2);
         }
 
         void start_timer()
@@ -223,25 +230,25 @@ class kataPlanner
             return false; 
         }
 
-        // bool valid_coords(int x1, int y1, int t1 )
-        // {
-        //     if(x1 > -1 && y1 > -1 && x1 < x_size && y1 < y_size)
-        //     {
-        //         return true; 
-        //     }
-        //     return false; 
-        // }
+        bool valid_coords(int x1, int y1, int t1 )
+        {
+            if(x1 > -1 && y1 > -1 && x1 < x_size && y1 < y_size && t1 < target_steps)
+            {
+                return true; 
+            }
+            return false; 
+        }
 
         bool valid_coords(std::tuple<int, int, int> input )
         {
-            if( (std::get<0>(input) == 175) && (std::get<1>(input) == 100) ||
-                (std::get<0>(input) == 176) && (std::get<1>(input) == 101) ||
-                (std::get<0>(input) == 174 && (std::get<1>(input) == 99)))
-                {
-                    mexPrintf("valid coordinating this current x: %d, y: %d, t:%d\n", std::get<0>(input), std::get<1>(input), std::get<2>(input));
-                    // mexPrintf("FOUND x SECRETLY\n");
+            // if( (std::get<0>(input) == 175) && (std::get<1>(input) == 100) ||
+            //     (std::get<0>(input) == 176) && (std::get<1>(input) == 101) ||
+            //     (std::get<0>(input) == 174 && (std::get<1>(input) == 99)))
+            //     {
+            //         mexPrintf("valid coordinating this current x: %d, y: %d, t:%d\n", std::get<0>(input), std::get<1>(input), std::get<2>(input));
+            //         // mexPrintf("FOUND x SECRETLY\n");
 
-                }
+            //     }
 
             if( std::get<0>(input) > -1 && 
                 std::get<1>(input) > -1 && 
@@ -286,6 +293,7 @@ class kataPlanner2D : public kataPlanner
         // double*	heuristic_map;
         std::unordered_map<std::tuple<int, int>,int,tuple_hash_function2D> open_g_track;
         std::unordered_map<std::tuple<int, int>,int,tuple_hash_function2D> heuristic_map;
+        bool reset_flag = true;
 
         kataPlanner2D()
         :kataPlanner()
@@ -299,6 +307,17 @@ class kataPlanner2D : public kataPlanner
 
         }
 
+        void reset_planner()
+        {
+            weight+=2.0;
+            open_g_track.clear();
+            closed_list2D.clear();
+            while(!open_is_empty())
+            {
+                open_list.pop();
+            }
+        }
+
         bool cur_is_goal(planNode* input) //introducing offset here. 
         {
             // int elapsed = cumulative_time();
@@ -310,13 +329,29 @@ class kataPlanner2D : public kataPlanner
             //         return true;
             //    }
             // return false;
-          
-            if(get_last_x() ==  input->get_dim(0) &&
-               get_last_y() ==  input->get_dim(1) )
+
+
+           
+            if(target_traj[input->get_dim(2)] ==  input->get_dim(0) &&
+               target_traj[target_steps + input->get_dim(2)] ==  input->get_dim(1) )
                {
+
+                // else
+                // {
                     input->set_is_goal(true);
                     return true;
-               }
+                }
+            //    }
+                // else if(input->get_dim(2) > target_steps && 
+                // target_traj[target_steps-1] ==  input->get_dim(0) &&
+                // target_traj[target_steps + target_steps- 1] ==  input->get_dim(1) )
+                // {
+                //     //need to reset the weight and run again. 
+                //     mexPrintf("Function %s line %d \n", __FUNCTION__, __LINE__);
+                //     reset_flag = true;
+                //     return false;
+                    
+                // }
 
             return false;
         }
@@ -325,7 +360,7 @@ class kataPlanner2D : public kataPlanner
         {
             for(int i = 0; i < NUMDIRS; ++i)
             {
-                if(valid_coords(current->get_dim(0)+dX[i], current->get_dim(1)+dY[i]) && goal_not_expanded() )
+                if(valid_coords(current->get_dim(0)+dX[i], current->get_dim(1)+dY[i] ) && goal_not_expanded() )
                 {
                     evaluate_neighbor(current, dX[i], dY[i]);
                 }
@@ -344,8 +379,8 @@ class kataPlanner2D : public kataPlanner
             auto search_iter = open_g_track.find(std::make_tuple(new_candidate->get_dim(0), new_candidate->get_dim(1)));
             if( search_iter != open_g_track.end()) //found candidate in open list
             {
-                mexPrintf("Found something: ");
-                mexPrintf("existing g: %d, new g: %d\n",search_iter->second, new_candidate->get_g());
+                // mexPrintf("Found something: ");
+                // mexPrintf("existing g: %d, new g: %d\n",search_iter->second, new_candidate->get_g());
                 if(search_iter->second > new_candidate->get_g()) //new candidate has better g value
                 {
                     // search_iter->second = new_candidate->get_g();
@@ -408,7 +443,7 @@ class kataPlanner2D : public kataPlanner
         {
             if(!in_closed(std::make_tuple(current->get_dim(0)+rel_x,current->get_dim(1)+rel_y))) //verify that the neighbor is not already in the closed list
             {
-                planNode* neighbor = new planNode(current->get_dim(0) + rel_x, current->get_dim(1) + rel_y);
+                planNode* neighbor = new planNode(current->get_dim(0) + rel_x, current->get_dim(1) + rel_y, current->get_dim(2)+1);
                 if(!(set_costs(neighbor, current->get_g())) && improved_g(neighbor))//returns true if neighbor has a better g value than the one currently in the open list. 
                 {
                     neighbor -> set_prev(current);
@@ -432,24 +467,56 @@ class kataPlanner2D : public kataPlanner
 
         void generate_path()
         {
-            planNode* start = new planNode(robotposeX, robotposeY);
-            start->set_is_start();
-            add_to_open(start);
+            // planNode* start = new planNode(robotposeX, robotposeY, 0);
+            // start->set_is_start();
+            // add_to_open(start);
 
-            while(!open_is_empty() && goal_not_expanded())  
+            // while(!open_is_empty() && goal_not_expanded())  
+            // {
+            //     planNode* current = new planNode();
+            //     current = get_next_from_open();
+            //     if(!in_closed(std::make_tuple(current->get_dim(0),current->get_dim(1)))) //current is in closed, so already evaluated. 
+            //     {
+            //         evaluate_neighbors(current);
+            //         add_to_closed(current);
+            //     }
+            //     else
+            //     {
+            //         delete current; //memory management
+            //     }
+            // }
+
+            while(reset_flag)
             {
-                planNode* current = new planNode();
-                current = get_next_from_open();
-                if(!in_closed(std::make_tuple(current->get_dim(0),current->get_dim(1)))) //current is in closed, so already evaluated. 
+                reset_flag = false;
+                expanded_goal = false; 
+                planNode* start = new planNode(robotposeX, robotposeY, 0);
+                start->set_is_start();
+                add_to_open(start);
+                while(!open_is_empty() && goal_not_expanded() && !reset_flag)  
                 {
-                    evaluate_neighbors(current);
-                    add_to_closed(current);
+                    planNode* current = new planNode();
+                    current = get_next_from_open();
+                    if(!in_closed(std::make_tuple(current->get_dim(0),current->get_dim(1)))) //current is in closed, so already evaluated. 
+                    {
+                        evaluate_neighbors(current);
+                        add_to_closed(current);
+                    }
+                    else
+                    {
+                        delete current; //memory management
+                    }
                 }
-                else
+                if(reset_flag)
                 {
-                    delete current; //memory management
+                    mexPrintf("Function %s line %d \n", __FUNCTION__, __LINE__);
+                    reset_planner();
                 }
+                mexPrintf("Function %s line %d \n", __FUNCTION__, __LINE__);
+                
+
             }
+            
 
             if(open_is_empty())
             {
