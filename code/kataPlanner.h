@@ -344,8 +344,8 @@ class kataPlanner2D : public kataPlanner
             auto search_iter = open_g_track.find(std::make_tuple(new_candidate->get_dim(0), new_candidate->get_dim(1)));
             if( search_iter != open_g_track.end()) //found candidate in open list
             {
-                mexPrintf("Found something: ");
-                mexPrintf("existing g: %d, new g: %d\n",search_iter->second, new_candidate->get_g());
+                // mexPrintf("Found something: ");
+                // mexPrintf("existing g: %d, new g: %d\n",search_iter->second, new_candidate->get_g());
                 if(search_iter->second > new_candidate->get_g()) //new candidate has better g value
                 {
                     // search_iter->second = new_candidate->get_g();
@@ -887,7 +887,7 @@ class kataPlanner3D : public kataPlanner
             if(!(obs_flag)); //set_c returns true if obstacle
             {
                 neighbor->set_g_cumulative(cumulative_cost); //node adds cost to the provided cumulative cost. 
-                neighbor->set_h(10*heuristic_planner.heuristic_lookup(neighbor->get_dim(0),neighbor->get_dim(1)));
+                neighbor->set_h(20*heuristic_planner.heuristic_lookup(neighbor->get_dim(0),neighbor->get_dim(1)));
                 return obs_flag; 
             }
         }

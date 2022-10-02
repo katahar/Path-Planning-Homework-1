@@ -45,8 +45,8 @@
 #define NUMOFDIRS 8
 
 bool first_run_complete = false; 
-kataPlanner3D planner_3d;
-// kataPlanner2D planner_2d;
+// kataPlanner3D planner_3d;
+kataPlanner2D planner_2d;
 
 int time_count = 0; 
 
@@ -73,11 +73,11 @@ static void planner(
         int robotposeXcorrected = robotposeX;
         int robotposeYcorrected = robotposeY;
         // mexPrintf("\nInitial Pose \n X: %d, Y: %d\n", robotposeXcorrected, robotposeYcorrected);
-        // planner_2d = kataPlanner2D(map, x_size, y_size, target_steps, target_traj, collision_thresh, robotposeXcorrected, robotposeYcorrected);
-        planner_3d = kataPlanner3D(map, x_size, y_size, target_steps, target_traj, collision_thresh, robotposeXcorrected, robotposeYcorrected);
+        planner_2d = kataPlanner2D(map, x_size, y_size, target_steps, target_traj, collision_thresh, robotposeXcorrected, robotposeYcorrected);
+        // planner_3d = kataPlanner3D(map, x_size, y_size, target_steps, target_traj, collision_thresh, robotposeXcorrected, robotposeYcorrected);
 
-        planner_3d.generate_path();
-        // planner_2d.generate_path();
+        // planner_3d.generate_path();
+        planner_2d.generate_path();
         // planner_2d.run_as_heuristic();
         first_run_complete = true;
         mexPrintf("Planning complete. \n");
@@ -87,11 +87,11 @@ static void planner(
     }
     else
     {
-        action_ptr[0] = planner_3d.get_x_dir(time_count); 
-        action_ptr[1] = planner_3d.get_y_dir(time_count);
-        mexPrintf("--\n"); 
-        // action_ptr[0] = planner_2d.get_x_dir(time_count)+1; //add 1 in 2d
-        // action_ptr[1] = planner_2d.get_y_dir(time_count)+1; //add 1 in 2d
+        // action_ptr[0] = planner_3d.get_x_dir(time_count); 
+        // action_ptr[1] = planner_3d.get_y_dir(time_count);
+        // mexPrintf("--\n"); 
+        action_ptr[0] = planner_2d.get_x_dir(time_count)+1; //add 1 in 2d
+        action_ptr[1] = planner_2d.get_y_dir(time_count)+1; //add 1 in 2d
         // mexPrintf("action pointer: \n X: %d, Y: %d\n", action_ptr[0],action_ptr[1]);
         time_count++;
     }
