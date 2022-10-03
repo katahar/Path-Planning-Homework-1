@@ -90,6 +90,7 @@ class kataPlanner
         // 8-connected grid
         int dX[NUMDIRS] = {-1, -1, -1,  0,  0,  1, 1, 1, 0};
         int dY[NUMDIRS] = {-1,  0,  1, -1,  1, -1, 0, 1, 0};
+        bool first_run = true;
 
 
     public: 
@@ -158,16 +159,33 @@ class kataPlanner
 
         int scaled_slide_heuristic(planNode* neighbor)
         {
-            if(neighbor->get_dim(2) < target_steps)
+            if(first_run)
             {
-                // return euclidean_dist(neighbor->get_dim(0), neighbor->get_dim(1), target_traj[target_steps-neighbor->get_dim(2)],target_traj[target_steps+target_steps-neighbor->get_dim(2)]);
-                return euclidean_dist(neighbor->get_dim(0), neighbor->get_dim(1), target_traj[target_steps+neighbor->get_dim(2)]-1,target_traj[target_steps+neighbor->get_dim(2)]-1);
+                if(neighbor->get_dim(2) < target_steps)
+                {
+                    // return euclidean_dist(neighbor->get_dim(0), neighbor->get_dim(1), target_traj[target_steps-neighbor->get_dim(2)],target_traj[target_steps+target_steps-neighbor->get_dim(2)]);
+                    return euclidean_dist(neighbor->get_dim(0), neighbor->get_dim(1), target_traj[target_steps+neighbor->get_dim(2)]-1,target_traj[target_steps+neighbor->get_dim(2)]-1);
 
+                }
+                else
+                {
+                    return 100000000;
+                }
             }
             else
             {
-                return 100000000;
+                if(neighbor->get_dim(2) < target_steps)
+                {
+                    int cur_euclid = euclidean_dist(neighbor->get_dim(0), neighbor->get_dim(1), target_traj[target_steps+neighbor->get_dim(2)]-1,target_traj[target_steps+neighbor->get_dim(2)]-1);
+                    int index = std::min(int(neighbor->get_dim(2)+(cur_euclid*target_steps*0.5/std::max(x_size,y_size))), target_steps);
+                    return euclidean_dist(neighbor->get_dim(0), neighbor->get_dim(1), target_traj[index]-1,target_traj[index]-1);
+                }
+                else
+                {
+                    return 100000000;
+                }
             }
+
         }
 
         int euclidean_dist(int x1, int y1, int x2, int y2)
@@ -188,7 +206,7 @@ class kataPlanner
         double cumulative_time()
         {
             std::chrono::time_point<std::chrono::system_clock> curTime = std::chrono::system_clock::now();
-            return std::chrono::duration_cast<std::chrono::milliseconds>(curTime - startTime).count()/1000;
+            return ceil(std::chrono::duration_cast<std::chrono::milliseconds>(curTime - startTime).count()/1000);
         }
 
         bool goal_not_expanded()
@@ -307,7 +325,7 @@ class kataPlanner2D : public kataPlanner
         // double*	heuristic_map;
         std::unordered_map<std::tuple<int, int>,int,tuple_hash_function2D> open_g_track;
         std::unordered_map<std::tuple<int, int>,int,tuple_hash_function2D> heuristic_map;
-        bool first_run = true;
+        int intercept_ind_greedy; 
 
         kataPlanner2D()
         :kataPlanner()
@@ -326,9 +344,10 @@ class kataPlanner2D : public kataPlanner
         {
             if(first_run)
             {
-                // works for 6,5,4
-                if(target_traj[input->get_dim(2)+2]-1 == input->get_dim(0) &&
-                target_traj[target_steps+input->get_dim(2)+2]-1 ==  input->get_dim(1) )
+                // works for 6,5,4 1?
+                int time_offset = 5;
+                if(target_traj[input->get_dim(2)+int(cumulative_time())+time_offset]-1 == input->get_dim(0) &&
+                target_traj[target_steps+input->get_dim(2)+int(cumulative_time())+time_offset]-1 ==  input->get_dim(1) )
                 {
                     input->set_is_goal(true);
                     return true;
@@ -336,12 +355,14 @@ class kataPlanner2D : public kataPlanner
             }
             else
             {
-                //works for 3,2, 1
-                for(int i = input->get_dim(2)+2; i < target_steps; ++i)
+                int time_offset = 5;
+                //works for 3,2, 
+                for(int i = input->get_dim(2)+cumulative_time()+time_offset; i < target_steps; ++i)
                 {
                     if(input->get_dim(0)== target_traj[i]-1 && 
-                        input->get_dim(1) == target_traj[target_steps+i]-1 )
+                       input->get_dim(1) == target_traj[target_steps+i]-1 )
                     {
+                        intercept_ind_greedy = i;
                         return true;
                     }
                 }
@@ -519,7 +540,7 @@ class kataPlanner2D : public kataPlanner
 
         void populate_path(planNode* goal)
         {
-            // mexPrintf("Populating path."); // x: %d, y: %d\n", goal->get_dim(0),goal->get_dim(1));
+            mexPrintf("Populating path.\n"); // x: %d, y: %d\n", goal->get_dim(0),goal->get_dim(1));
             planNode* current = new planNode();
             current = goal;
             planNode* prev = new planNode();
@@ -538,7 +559,32 @@ class kataPlanner2D : public kataPlanner
             path.insert(path.begin(), current -> get_dim(0)+1);
             path.insert(path.begin(), prev -> get_dim(1)+1); 
             path.insert(path.begin(), prev -> get_dim(0)+1);
-            // mexPrintf("Population complete \n");
+
+            if(!first_run)
+            {
+                //this helps to deal with the indexing error of the planner and the trajectory
+                // path.push_back(target_traj[intercept_ind_greedy-2]-1);
+                // path.push_back(target_traj[target_steps+intercept_ind_greedy-2]-1);
+
+                // mexPrintf("last position of plan pre-append (%d,%d)\n", path[path.size()-2], path[path.size()-1]);
+                for(int i = intercept_ind_greedy ; i > 0 ; --i)
+                {
+                    // mexPrintf("(%d,%d)\n",int(target_traj[i]-1), int(target_traj[target_steps+i]-1) );
+                    if(map[get_map_ind(target_traj[i]-1, target_traj[target_steps+i]-1)]< collision_thresh)
+                    {
+                        path.push_back(target_traj[i]);
+                        path.push_back(target_traj[target_steps+i]);
+                    }
+                    else
+                    {
+                        i = -1;
+                    }
+
+                }
+
+            }
+
+            mexPrintf("Population complete. :) \n");
 
         }
 
